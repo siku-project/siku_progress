@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import type { CircleDirection, ProgressItem } from '@/utils/progress'
-import { hexToRgba } from '@/utils/progress'
+import { SUCCESS_COLOR, hexToRgba } from '@/utils/progress'
 import { resolveCircleSweep } from '@/utils/progressGeometry'
 import type { ProgressPhase } from '@/stores/progress'
 
@@ -41,9 +41,13 @@ const stoppedRatio = computed<number | null>(() => {
   return Math.min(1, Math.max(0, ratio))
 })
 
+const effectiveColor = computed(() =>
+  props.item.indeterminate && props.phase === 'done' ? SUCCESS_COLOR : props.item.color,
+)
+
 const arcRatio = computed<number>(() => {
   if (props.item.indeterminate) {
-    return 0.27
+    return props.phase === 'done' ? 1 : 0.27
   }
   if (stoppedRatio.value !== null) {
     return sweep.value.from + (sweep.value.to - sweep.value.from) * stoppedRatio.value
@@ -92,7 +96,11 @@ const dashStyle = computed(() => ({
 <template>
   <div
     class="gauge"
-    :class="{ 'gauge--done': phase === 'done', 'gauge--cancelled': phase === 'cancelled' }"
+    :class="{
+      'gauge--done': phase === 'done' && item.indeterminate,
+      'gauge--celebrate': phase === 'done' && !item.indeterminate,
+      'gauge--cancelled': phase === 'cancelled',
+    }"
   >
     <svg
       :width="size"
@@ -127,7 +135,7 @@ const dashStyle = computed(() => ({
           :cy="center"
           :r="radius"
           :stroke-width="stroke + GLOW"
-          :style="{ ...dashStyle, stroke: hexToRgba(item.color, 0.11) }"
+          :style="{ ...dashStyle, stroke: hexToRgba(effectiveColor, 0.11) }"
         />
         <circle
           class="gauge__arc"
@@ -135,7 +143,7 @@ const dashStyle = computed(() => ({
           :cy="center"
           :r="radius"
           :stroke-width="stroke - 2"
-          :style="{ ...dashStyle, stroke: hexToRgba(item.color, 0.82) }"
+          :style="{ ...dashStyle, stroke: hexToRgba(effectiveColor, 0.82) }"
         />
         <circle
           class="gauge__frost"
@@ -222,7 +230,30 @@ const dashStyle = computed(() => ({
 }
 
 .gauge--done {
-  filter: brightness(1.22);
+  filter: brightness(1.1);
+}
+
+.gauge--celebrate {
+  animation: gauge-bloom 900ms ease-in-out;
+}
+
+@keyframes gauge-bloom {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  30% {
+    transform: scale(1.04);
+    filter: brightness(1.5);
+  }
+  65% {
+    transform: scale(0.99);
+    filter: brightness(1.15);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1.05);
+  }
 }
 
 .gauge--cancelled {

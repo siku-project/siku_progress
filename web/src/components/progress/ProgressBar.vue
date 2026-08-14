@@ -20,11 +20,16 @@ const { percent } = useProgressPercentage(item, phase, stoppedAt)
 
 const hasHeader = computed(() => Boolean(props.item.label) || props.item.showPercentage)
 
+const celebrate = computed(() => props.phase === 'done' && !props.item.indeterminate)
+
 const wrapper = computed(() => (props.item.background ? IcePanel : 'div'))
 </script>
 
 <template>
-  <div class="bar" :class="{ 'bar--cancelled': phase === 'cancelled' }">
+  <div
+    class="bar"
+    :class="{ 'bar--cancelled': phase === 'cancelled', 'bar--celebrate': celebrate }"
+  >
     <component :is="wrapper" class="bar__panel">
       <div
         class="bar__inner"
@@ -50,6 +55,25 @@ const wrapper = computed(() => (props.item.background ? IcePanel : 'div'))
 
 .bar--cancelled {
   filter: saturate(0.5);
+}
+
+.bar--celebrate {
+  animation: bar-pulse 900ms ease-in-out;
+}
+
+@keyframes bar-pulse {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.03);
+  }
+  65% {
+    transform: scale(0.99);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .bar__inner {

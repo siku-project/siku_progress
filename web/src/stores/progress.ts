@@ -5,7 +5,7 @@ import type { ProgressInput, ProgressItem } from '@/utils/progress'
 
 export type ProgressPhase = 'running' | 'done' | 'cancelled'
 
-const DONE_HOLD = 650
+const DONE_HOLD = 950
 const CANCEL_HOLD = 500
 
 export const useProgressStore = defineStore('progress', () => {

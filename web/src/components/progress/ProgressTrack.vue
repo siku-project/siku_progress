@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import type { BarDirection, ProgressItem } from '@/utils/progress'
-import { hexToRgba } from '@/utils/progress'
+import { SUCCESS_COLOR, hexToRgba } from '@/utils/progress'
 import { resolveSegments } from '@/utils/progressGeometry'
 import type { ProgressSegment } from '@/utils/progressGeometry'
 import type { ProgressPhase } from '@/stores/progress'
@@ -48,19 +48,29 @@ const transitionFor = (): string => {
   return running.value ? `${props.item.duration}ms` : '0ms'
 }
 
-const fillStyle = computed(() => ({
-  background: `linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.04) 55%, transparent 100%), linear-gradient(180deg, ${hexToRgba(props.item.color, 0.82)} 0%, ${hexToRgba(props.item.color, 0.52)} 60%, ${hexToRgba(props.item.color, 0.62)} 100%)`,
-  boxShadow: `inset 0 1px 0 rgba(255, 255, 255, 0.32), inset 0 0 10px ${hexToRgba(props.item.color, 0.2)}, 0 0 16px ${hexToRgba(props.item.color, 0.32)}`,
-}))
+const styleFor = (color: string) => ({
+  background: `linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.04) 55%, transparent 100%), linear-gradient(180deg, ${hexToRgba(color, 0.82)} 0%, ${hexToRgba(color, 0.52)} 60%, ${hexToRgba(color, 0.62)} 100%)`,
+  boxShadow: `inset 0 1px 0 rgba(255, 255, 255, 0.32), inset 0 0 10px ${hexToRgba(color, 0.2)}, 0 0 16px ${hexToRgba(color, 0.32)}`,
+})
+
+const fillStyle = computed(() => styleFor(props.item.color))
+
+const completeStyle = computed(() => styleFor(SUCCESS_COLOR))
 </script>
 
 <template>
   <div
     class="track"
-    :class="{ 'track--done': phase === 'done', 'track--cancelled': phase === 'cancelled' }"
+    :class="{
+      'track--done': phase === 'done',
+      'track--celebrate': phase === 'done' && !item.indeterminate,
+      'track--cancelled': phase === 'cancelled',
+    }"
   >
     <template v-if="item.indeterminate">
+      <span v-if="phase === 'done'" class="track__complete" :style="completeStyle"></span>
       <span
+        v-else
         class="track__pulse"
         :class="{ 'track__pulse--reverse': item.direction === 'right-left' }"
         :style="{
@@ -176,9 +186,40 @@ const fillStyle = computed(() => ({
   );
 }
 
+.track__complete {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  animation: complete-in 220ms ease-out;
+}
+
+@keyframes complete-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .track--done {
   border-color: rgba(212, 231, 247, 0.32);
-  filter: brightness(1.22);
+}
+
+.track--celebrate {
+  animation: track-bloom 900ms ease-out forwards;
+}
+
+@keyframes track-bloom {
+  0% {
+    filter: brightness(1);
+  }
+  25% {
+    filter: brightness(1.5);
+  }
+  100% {
+    filter: brightness(1.05);
+  }
 }
 
 .track--cancelled {
