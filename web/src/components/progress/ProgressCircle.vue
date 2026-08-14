@@ -24,7 +24,7 @@ const percentFontSize = computed(
 )
 
 const timeFontSize = computed(
-  () => `${Math.min(17, Math.max(11, Math.round(props.item.size * 0.115)))}px`,
+  () => `${Math.min(19, Math.max(12, Math.round(props.item.size * 0.13)))}px`,
 )
 </script>
 

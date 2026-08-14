@@ -137,11 +137,11 @@ const wrapper = computed(() => (props.item.background ? IcePanel : 'div'))
 }
 
 .bar__time {
-  font-size: 10.5px;
-  font-weight: 300;
+  font-size: 12px;
+  font-weight: 400;
   letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums;
-  color: rgba(198, 224, 243, 0.68);
+  color: rgba(226, 240, 250, 0.92);
   text-shadow:
     0 1px 3px rgba(5, 14, 30, 0.85),
     0 1px 10px rgba(5, 14, 30, 0.6);
