@@ -49,8 +49,8 @@ const transitionFor = (): string => {
 }
 
 const fillStyle = computed(() => ({
-  background: `linear-gradient(180deg, ${hexToRgba(props.item.color, 0.5)} 0%, ${hexToRgba(props.item.color, 0.24)} 100%)`,
-  boxShadow: `inset 0 1px 0 ${hexToRgba(props.item.color, 0.45)}, inset 0 0 12px ${hexToRgba(props.item.color, 0.16)}, 0 0 16px ${hexToRgba(props.item.color, 0.22)}`,
+  background: `linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.04) 55%, transparent 100%), linear-gradient(180deg, ${hexToRgba(props.item.color, 0.82)} 0%, ${hexToRgba(props.item.color, 0.52)} 60%, ${hexToRgba(props.item.color, 0.62)} 100%)`,
+  boxShadow: `inset 0 1px 0 rgba(255, 255, 255, 0.32), inset 0 0 10px ${hexToRgba(props.item.color, 0.2)}, 0 0 16px ${hexToRgba(props.item.color, 0.32)}`,
 }))
 </script>
 

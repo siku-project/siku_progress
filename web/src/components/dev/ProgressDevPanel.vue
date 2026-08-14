@@ -19,6 +19,7 @@ const mode = ref<ProgressMode>('fill')
 const duration = ref(5000)
 const color = ref(DEFAULT_COLOR)
 const showPercentage = ref(true)
+const background = ref(true)
 
 const DIRECTION_OPTIONS = [
   { value: 'left-right', label: 'Gauche → droite' },
@@ -47,6 +48,7 @@ const start = (): void => {
     duration: duration.value,
     color: color.value,
     showPercentage: showPercentage.value,
+    background: background.value,
   })
 }
 
@@ -90,6 +92,7 @@ const presetMinimal = (): void => {
     direction: 'left-right',
     mode: 'fill',
     duration: 2500,
+    background: false,
   })
 }
 </script>
@@ -127,6 +130,8 @@ const presetMinimal = (): void => {
         <DevSwatches v-model="color" :colors="COLOR_PRESETS" />
 
         <DevCheck v-model="showPercentage" label="Afficher le pourcentage" />
+
+        <DevCheck v-model="background" label="Fond de panneau" />
 
         <div class="panel__actions">
           <DevButton variant="primary" @click="start">Lancer</DevButton>

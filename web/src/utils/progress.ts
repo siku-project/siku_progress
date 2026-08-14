@@ -25,6 +25,7 @@ export interface ProgressInput {
   mode?: ProgressMode
   color?: string
   showPercentage?: boolean
+  background?: boolean
 }
 
 export interface ProgressItem {
@@ -35,6 +36,7 @@ export interface ProgressItem {
   mode: ProgressMode
   color: string
   showPercentage: boolean
+  background: boolean
   startedAt: number
 }
 
@@ -75,6 +77,7 @@ export const normalizeProgress = (input: ProgressInput, id: number): ProgressIte
       : 'fill',
     color: typeof input.color === 'string' && isValidHex(input.color) ? input.color : DEFAULT_COLOR,
     showPercentage: input.showPercentage === true,
+    background: input.background !== false,
     startedAt: Date.now(),
   }
 }
