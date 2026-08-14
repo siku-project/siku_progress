@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import type { BarDirection, ProgressItem } from '@/utils/progress'
-import { FAIL_COLOR, FAIL_SHARD_DELAYS, SUCCESS_COLOR, hexToRgba } from '@/utils/progress'
+import { FAIL_COLOR, SUCCESS_COLOR, hexToRgba } from '@/utils/progress'
 import { resolveSegments } from '@/utils/progressGeometry'
 import type { ProgressSegment } from '@/utils/progressGeometry'
 import type { ProgressPhase } from '@/stores/progress'
@@ -92,18 +92,6 @@ const completeStyle = computed(() => styleFor(SUCCESS_COLOR))
           transformOrigin: segment.origin,
           transform: `scaleX(${scaleFor(segment)})`,
           transitionDuration: transitionFor(),
-        }"
-      ></span>
-    </template>
-    <template v-if="phase === 'failed'">
-      <span
-        v-for="(delay, index) in FAIL_SHARD_DELAYS"
-        :key="index"
-        class="track__shard"
-        :style="{
-          left: `${(index * 100) / FAIL_SHARD_DELAYS.length}%`,
-          width: `${100 / FAIL_SHARD_DELAYS.length + 0.6}%`,
-          animationDelay: `${delay}ms`,
         }"
       ></span>
     </template>
@@ -242,51 +230,113 @@ const completeStyle = computed(() => styleFor(SUCCESS_COLOR))
 
 .track--failed {
   border-color: rgba(244, 110, 122, 0.45);
-  animation: track-glitch 440ms steps(1) 2;
+  overflow: visible;
+  animation: glitch-jitter 850ms steps(1) both;
 }
 
-.track__shard {
+.track--failed::before,
+.track--failed::after {
+  content: '';
   position: absolute;
-  top: 0;
-  bottom: 0;
-  background: linear-gradient(180deg, rgba(13, 30, 51, 0.97) 0%, rgba(8, 20, 37, 0.98) 100%);
-  opacity: 0;
-  animation: shard-in 60ms steps(1) forwards;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
 }
 
-@keyframes shard-in {
-  to {
+.track--failed::before {
+  background: rgba(244, 110, 122, 0.3);
+  animation: ghost-warm 140ms steps(2) 6;
+}
+
+.track--failed::after {
+  background: rgba(111, 168, 212, 0.26);
+  animation: ghost-cold 160ms steps(2) 5;
+}
+
+@keyframes ghost-warm {
+  0% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  50% {
     opacity: 1;
+    transform: translateX(-5px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(3px);
   }
 }
 
-@keyframes track-glitch {
+@keyframes ghost-cold {
+  0% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(5px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-3px);
+  }
+}
+
+@keyframes glitch-jitter {
   0% {
     transform: translate(0, 0);
+    opacity: 1;
   }
-  12% {
-    transform: translate(-2px, 1px);
+  6% {
+    transform: translate(-6px, 1px) skewX(-5deg);
   }
-  24% {
-    transform: translate(2px, -1px);
+  10% {
+    transform: translate(6px, -1px) skewX(4deg);
+    opacity: 0.55;
   }
-  36% {
-    transform: translate(-1px, -1px);
+  14% {
+    transform: translate(-4px, 0);
+    opacity: 1;
   }
-  48% {
-    transform: translate(2px, 1px);
+  22% {
+    transform: translate(5px, 2px) skewX(-4deg);
   }
-  60% {
+  28% {
+    transform: translate(-7px, -1px);
+    opacity: 0.6;
+  }
+  34% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  44% {
+    transform: translate(5px, 0) skewX(6deg);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate(-4px, 1px);
+    opacity: 1;
+  }
+  58% {
+    transform: translate(3px, -1px) skewX(-3deg);
+    opacity: 0.8;
+  }
+  66% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  78% {
     transform: translate(-2px, 0);
-  }
-  72% {
-    transform: translate(1px, -1px);
+    opacity: 0.9;
   }
   86% {
-    transform: translate(-1px, 1px);
+    transform: translate(2px, 0);
+    opacity: 1;
   }
   100% {
     transform: translate(0, 0);
+    opacity: 1;
   }
 }
 </style>

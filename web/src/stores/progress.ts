@@ -7,7 +7,7 @@ export type ProgressPhase = 'running' | 'done' | 'cancelled' | 'failed'
 
 const DONE_HOLD = 950
 const CANCEL_HOLD = 500
-const FAIL_HOLD = 1300
+const FAIL_HOLD = 1000
 
 export const useProgressStore = defineStore('progress', () => {
   const current = ref<ProgressItem | null>(null)

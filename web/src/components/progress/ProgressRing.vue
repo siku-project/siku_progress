@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import type { CircleDirection, ProgressItem } from '@/utils/progress'
-import { FAIL_COLOR, FAIL_SHARD_DELAYS, SUCCESS_COLOR, hexToRgba } from '@/utils/progress'
+import { FAIL_COLOR, GLITCH_COLD_COLOR, SUCCESS_COLOR, hexToRgba } from '@/utils/progress'
 import { resolveCircleSweep } from '@/utils/progressGeometry'
 import type { ProgressPhase } from '@/stores/progress'
 
@@ -166,22 +166,24 @@ const dashStyle = computed(() => ({
           :style="dashStyle"
         />
       </g>
-      <template v-if="phase === 'failed'">
+      <g v-if="phase === 'failed'" :transform="groupTransform">
         <circle
-          v-for="(delay, index) in FAIL_SHARD_DELAYS"
-          :key="index"
-          class="gauge__shard"
+          class="gauge__ghost gauge__ghost--warm"
           :cx="center"
           :cy="center"
           :r="radius"
-          :stroke-width="stroke + 3"
-          :style="{
-            strokeDasharray: `${circumference / FAIL_SHARD_DELAYS.length + 1} ${circumference}`,
-            strokeDashoffset: -((index * circumference) / FAIL_SHARD_DELAYS.length),
-            animationDelay: `${delay}ms`,
-          }"
+          :stroke-width="stroke - 2"
+          :style="{ ...dashStyle, stroke: hexToRgba(FAIL_COLOR, 0.4) }"
         />
-      </template>
+        <circle
+          class="gauge__ghost gauge__ghost--cold"
+          :cx="center"
+          :cy="center"
+          :r="radius"
+          :stroke-width="stroke - 2"
+          :style="{ ...dashStyle, stroke: hexToRgba(GLITCH_COLD_COLOR, 0.35) }"
+        />
+      </g>
     </svg>
 
     <div class="gauge__center">
@@ -289,50 +291,106 @@ const dashStyle = computed(() => ({
 }
 
 .gauge--failed {
-  animation: gauge-glitch 440ms steps(1) 2;
+  animation: glitch-jitter 850ms steps(1) both;
 }
 
-.gauge__shard {
+.gauge__ghost {
   fill: none;
-  stroke: rgba(8, 20, 37, 0.97);
-  stroke-linecap: butt;
-  opacity: 0;
-  animation: shard-in 60ms steps(1) forwards;
+  stroke-linecap: round;
 }
 
-@keyframes shard-in {
-  to {
+.gauge__ghost--warm {
+  animation: ghost-warm 140ms steps(2) 6;
+}
+
+.gauge__ghost--cold {
+  animation: ghost-cold 160ms steps(2) 5;
+}
+
+@keyframes ghost-warm {
+  0% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  50% {
     opacity: 1;
+    transform: translateX(-5px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(3px);
   }
 }
 
-@keyframes gauge-glitch {
+@keyframes ghost-cold {
+  0% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(5px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-3px);
+  }
+}
+
+@keyframes glitch-jitter {
   0% {
     transform: translate(0, 0);
+    opacity: 1;
   }
-  12% {
-    transform: translate(-2px, 1px);
+  6% {
+    transform: translate(-6px, 1px) skewX(-4deg);
   }
-  24% {
-    transform: translate(2px, -1px);
+  10% {
+    transform: translate(6px, -1px) skewX(3deg);
+    opacity: 0.55;
   }
-  36% {
-    transform: translate(-1px, -1px);
+  14% {
+    transform: translate(-4px, 0);
+    opacity: 1;
   }
-  48% {
-    transform: translate(2px, 1px);
+  22% {
+    transform: translate(5px, 2px) skewX(-3deg);
   }
-  60% {
+  28% {
+    transform: translate(-7px, -1px);
+    opacity: 0.6;
+  }
+  34% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  44% {
+    transform: translate(5px, 0) skewX(4deg);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate(-4px, 1px);
+    opacity: 1;
+  }
+  58% {
+    transform: translate(3px, -1px) skewX(-2deg);
+    opacity: 0.8;
+  }
+  66% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  78% {
     transform: translate(-2px, 0);
-  }
-  72% {
-    transform: translate(1px, -1px);
+    opacity: 0.9;
   }
   86% {
-    transform: translate(-1px, 1px);
+    transform: translate(2px, 0);
+    opacity: 1;
   }
   100% {
     transform: translate(0, 0);
+    opacity: 1;
   }
 }
 </style>
