@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import '@/assets/progress-effects.css'
 import { computed, onMounted, ref } from 'vue'
 import type { CircleDirection, ProgressItem } from '@/utils/progress'
 import { FAIL_COLOR, GLITCH_COLD_COLOR, SUCCESS_COLOR, hexToRgba } from '@/utils/progress'
@@ -315,7 +316,7 @@ const dashStyle = computed(() => ({
 }
 
 .gauge--failed {
-  animation: glitch-jitter 850ms steps(1) both;
+  animation: progress-glitch-jitter 850ms steps(1) both;
 }
 
 .gauge__ghost {
@@ -324,97 +325,10 @@ const dashStyle = computed(() => ({
 }
 
 .gauge__ghost--warm {
-  animation: ghost-warm 140ms steps(2) 6;
+  animation: progress-ghost-warm 140ms steps(2) 6;
 }
 
 .gauge__ghost--cold {
-  animation: ghost-cold 160ms steps(2) 5;
-}
-
-@keyframes ghost-warm {
-  0% {
-    opacity: 0;
-    transform: translateX(0);
-  }
-  50% {
-    opacity: 1;
-    transform: translateX(-5px);
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(3px);
-  }
-}
-
-@keyframes ghost-cold {
-  0% {
-    opacity: 0;
-    transform: translateX(0);
-  }
-  50% {
-    opacity: 1;
-    transform: translateX(5px);
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(-3px);
-  }
-}
-
-@keyframes glitch-jitter {
-  0% {
-    transform: translate(0, 0);
-    opacity: 1;
-  }
-  6% {
-    transform: translate(-6px, 1px) skewX(-4deg);
-  }
-  10% {
-    transform: translate(6px, -1px) skewX(3deg);
-    opacity: 0.55;
-  }
-  14% {
-    transform: translate(-4px, 0);
-    opacity: 1;
-  }
-  22% {
-    transform: translate(5px, 2px) skewX(-3deg);
-  }
-  28% {
-    transform: translate(-7px, -1px);
-    opacity: 0.6;
-  }
-  34% {
-    transform: translate(0, 0);
-    opacity: 1;
-  }
-  44% {
-    transform: translate(5px, 0) skewX(4deg);
-    opacity: 0.7;
-  }
-  50% {
-    transform: translate(-4px, 1px);
-    opacity: 1;
-  }
-  58% {
-    transform: translate(3px, -1px) skewX(-2deg);
-    opacity: 0.8;
-  }
-  66% {
-    transform: translate(0, 0);
-    opacity: 1;
-  }
-  78% {
-    transform: translate(-2px, 0);
-    opacity: 0.9;
-  }
-  86% {
-    transform: translate(2px, 0);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(0, 0);
-    opacity: 1;
-  }
+  animation: progress-ghost-cold 160ms steps(2) 5;
 }
 </style>

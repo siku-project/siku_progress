@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import '@/assets/progress-effects.css'
 import { resolveIcon } from '@/utils/icons'
 
 defineProps<{
@@ -15,26 +16,6 @@ defineProps<{
     <template v-if="label">{{ label }}</template>
   </span>
 </template>
-
-<style>
-@keyframes progress-text-flicker {
-  0% {
-    opacity: 1;
-  }
-  25% {
-    opacity: 0.4;
-  }
-  50% {
-    opacity: 0.9;
-  }
-  75% {
-    opacity: 0.5;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-</style>
 
 <style scoped>
 .plabel {

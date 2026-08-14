@@ -81,7 +81,7 @@ export const useProgressStore = defineStore('progress', () => {
     value.value = clamped
     if (clamped >= 1 && item.control.completeAtFull) {
       finish('done')
-    } else if (clamped <= 0 && item.control.failAtEmpty && everRose) {
+    } else if (clamped <= 0 && item.control.failAtEmpty && (everRose || item.control.startAt > 0)) {
       finish('failed')
     }
   }

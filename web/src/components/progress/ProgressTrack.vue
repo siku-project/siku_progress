@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import '@/assets/progress-effects.css'
 import { computed, onMounted, ref } from 'vue'
 import type { BarDirection, ProgressItem } from '@/utils/progress'
-import { FAIL_COLOR, SUCCESS_COLOR, hexToRgba } from '@/utils/progress'
+import { FAIL_COLOR, SUCCESS_COLOR } from '@/utils/progress'
+import { frostFillStyle } from '@/utils/progressStyle'
 import { resolveSegments } from '@/utils/progressGeometry'
 import type { ProgressSegment } from '@/utils/progressGeometry'
 import type { ProgressPhase } from '@/stores/progress'
@@ -71,14 +73,11 @@ const transitionFor = (): string => {
   return `${Math.max(props.item.startedAt + props.item.duration - Date.now(), 0)}ms`
 }
 
-const styleFor = (color: string) => ({
-  background: `linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.04) 55%, transparent 100%), linear-gradient(180deg, ${hexToRgba(color, 0.82)} 0%, ${hexToRgba(color, 0.52)} 60%, ${hexToRgba(color, 0.62)} 100%)`,
-  boxShadow: `inset 0 1px 0 rgba(255, 255, 255, 0.32), inset 0 0 10px ${hexToRgba(color, 0.2)}, 0 0 16px ${hexToRgba(color, 0.32)}`,
-})
+const fillStyle = computed(() =>
+  frostFillStyle(props.phase === 'failed' ? FAIL_COLOR : props.item.color),
+)
 
-const fillStyle = computed(() => styleFor(props.phase === 'failed' ? FAIL_COLOR : props.item.color))
-
-const completeStyle = computed(() => styleFor(SUCCESS_COLOR))
+const completeStyle = computed(() => frostFillStyle(SUCCESS_COLOR))
 </script>
 
 <template>
@@ -254,7 +253,7 @@ const completeStyle = computed(() => styleFor(SUCCESS_COLOR))
 .track--failed {
   border-color: rgba(244, 110, 122, 0.45);
   overflow: visible;
-  animation: glitch-jitter 850ms steps(1) both;
+  animation: progress-glitch-jitter 850ms steps(1) both;
 }
 
 .track--failed::before,
@@ -268,98 +267,11 @@ const completeStyle = computed(() => styleFor(SUCCESS_COLOR))
 
 .track--failed::before {
   background: rgba(244, 110, 122, 0.3);
-  animation: ghost-warm 140ms steps(2) 6;
+  animation: progress-ghost-warm 140ms steps(2) 6;
 }
 
 .track--failed::after {
   background: rgba(111, 168, 212, 0.26);
-  animation: ghost-cold 160ms steps(2) 5;
-}
-
-@keyframes ghost-warm {
-  0% {
-    opacity: 0;
-    transform: translateX(0);
-  }
-  50% {
-    opacity: 1;
-    transform: translateX(-5px);
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(3px);
-  }
-}
-
-@keyframes ghost-cold {
-  0% {
-    opacity: 0;
-    transform: translateX(0);
-  }
-  50% {
-    opacity: 1;
-    transform: translateX(5px);
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(-3px);
-  }
-}
-
-@keyframes glitch-jitter {
-  0% {
-    transform: translate(0, 0);
-    opacity: 1;
-  }
-  6% {
-    transform: translate(-6px, 1px) skewX(-5deg);
-  }
-  10% {
-    transform: translate(6px, -1px) skewX(4deg);
-    opacity: 0.55;
-  }
-  14% {
-    transform: translate(-4px, 0);
-    opacity: 1;
-  }
-  22% {
-    transform: translate(5px, 2px) skewX(-4deg);
-  }
-  28% {
-    transform: translate(-7px, -1px);
-    opacity: 0.6;
-  }
-  34% {
-    transform: translate(0, 0);
-    opacity: 1;
-  }
-  44% {
-    transform: translate(5px, 0) skewX(6deg);
-    opacity: 0.7;
-  }
-  50% {
-    transform: translate(-4px, 1px);
-    opacity: 1;
-  }
-  58% {
-    transform: translate(3px, -1px) skewX(-3deg);
-    opacity: 0.8;
-  }
-  66% {
-    transform: translate(0, 0);
-    opacity: 1;
-  }
-  78% {
-    transform: translate(-2px, 0);
-    opacity: 0.9;
-  }
-  86% {
-    transform: translate(2px, 0);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(0, 0);
-    opacity: 1;
-  }
+  animation: progress-ghost-cold 160ms steps(2) 5;
 }
 </style>
