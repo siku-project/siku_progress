@@ -49,14 +49,16 @@ const arcRatio = computed<number>(() => {
 
 const arcLength = computed(() => arcRatio.value * CIRCUMFERENCE)
 
-const dashArray = computed(() => `${arcLength.value} ${CIRCUMFERENCE}`)
+const dashArray = computed(
+  () => `${arcLength.value} ${Math.max(CIRCUMFERENCE - arcLength.value, 0)}`,
+)
 
 const dashOffset = computed(() => {
   if (sweep.value.anchor === 'center') {
     return arcLength.value / 2
   }
   if (sweep.value.anchor === 'end') {
-    return arcLength.value - CIRCUMFERENCE
+    return arcLength.value
   }
   return 0
 })
