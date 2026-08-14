@@ -84,12 +84,53 @@ export const CIRCLE_CENTER_MIN_SIZE = 96
 export const LOADING_DEFAULT_CYCLE = 1400
 
 export const PROGRESS_BASE_DEFAULTS: ProgressDefaults = {
-  color: DEFAULT_COLOR,
-  duration: DEFAULT_DURATION,
-  position: 'bottom-center',
-  loadingPosition: 'bottom-center',
-  circleSize: CIRCLE_DEFAULT_SIZE,
-  loadingCycle: LOADING_DEFAULT_CYCLE,
+  progress: {
+    color: DEFAULT_COLOR,
+    duration: DEFAULT_DURATION,
+    position: 'bottom-center',
+    barDirection: 'left-right',
+    circleDirection: 'clockwise',
+    mode: 'fill',
+    background: true,
+    labelPosition: 'bottom',
+    circleSize: CIRCLE_DEFAULT_SIZE,
+    showPercentage: false,
+    showTime: false,
+  },
+  loading: {
+    color: DEFAULT_COLOR,
+    cycle: LOADING_DEFAULT_CYCLE,
+    position: 'bottom-center',
+    barDirection: 'left-right',
+    circleDirection: 'clockwise',
+    background: true,
+    labelPosition: 'bottom',
+    circleSize: CIRCLE_DEFAULT_SIZE,
+    showTime: false,
+  },
+  control: {
+    color: DEFAULT_COLOR,
+    position: 'bottom-center',
+    barDirection: 'left-right',
+    circleDirection: 'clockwise',
+    background: true,
+    labelPosition: 'bottom',
+    circleSize: CIRCLE_DEFAULT_SIZE,
+    showPercentage: false,
+    behavior: 'direct',
+    riseRate: CONTROL_DEFAULT_RISE,
+    fallRate: CONTROL_DEFAULT_FALL,
+    pulseGain: CONTROL_DEFAULT_PULSE_GAIN,
+    startAt: 0,
+    completeAtFull: true,
+    failAtEmpty: false,
+  },
+  steps: {
+    color: DEFAULT_COLOR,
+    position: 'bottom-center',
+    background: true,
+    showCounter: false,
+  },
 }
 
 const HEX_PATTERN = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
@@ -114,13 +155,62 @@ export interface ProgressInput {
   steps?: number
 }
 
-export interface ProgressDefaults {
+export interface TimedDefaults {
   color: string
   duration: number
   position: ProgressPosition
-  loadingPosition: ProgressPosition
+  barDirection: BarDirection
+  circleDirection: CircleDirection
+  mode: ProgressMode
+  background: boolean
+  labelPosition: LabelPosition
   circleSize: number
-  loadingCycle: number
+  showPercentage: boolean
+  showTime: boolean
+}
+
+export interface LoadingDefaults {
+  color: string
+  cycle: number
+  position: ProgressPosition
+  barDirection: BarDirection
+  circleDirection: CircleDirection
+  background: boolean
+  labelPosition: LabelPosition
+  circleSize: number
+  showTime: boolean
+}
+
+export interface ControlDefaults {
+  color: string
+  position: ProgressPosition
+  barDirection: BarDirection
+  circleDirection: CircleDirection
+  background: boolean
+  labelPosition: LabelPosition
+  circleSize: number
+  showPercentage: boolean
+  behavior: ControlMode
+  riseRate: number
+  fallRate: number
+  pulseGain: number
+  startAt: number
+  completeAtFull: boolean
+  failAtEmpty: boolean
+}
+
+export interface StepsDefaults {
+  color: string
+  position: ProgressPosition
+  background: boolean
+  showCounter: boolean
+}
+
+export interface ProgressDefaults {
+  progress: TimedDefaults
+  loading: LoadingDefaults
+  control: ControlDefaults
+  steps: StepsDefaults
 }
 
 export interface ProgressItem {
@@ -166,21 +256,25 @@ const resolveDirection = (
   shape: ProgressShape,
   direction: ProgressDirection | undefined,
   indeterminate: boolean,
+  barFallback: BarDirection,
+  circleFallback: CircleDirection,
 ): ProgressDirection => {
   if (shape === 'circle') {
     if (indeterminate) {
-      return direction === 'counter-clockwise' ? 'counter-clockwise' : 'clockwise'
+      return direction === 'clockwise' || direction === 'counter-clockwise'
+        ? direction
+        : circleFallback
     }
     return CIRCLE_DIRECTIONS.includes(direction as CircleDirection)
       ? (direction as CircleDirection)
-      : 'clockwise'
+      : circleFallback
   }
   if (indeterminate) {
-    return direction === 'right-left' ? 'right-left' : 'left-right'
+    return direction === 'left-right' || direction === 'right-left' ? direction : barFallback
   }
   return BAR_DIRECTIONS.includes(direction as BarDirection)
     ? (direction as BarDirection)
-    : 'left-right'
+    : barFallback
 }
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value))
@@ -188,6 +282,7 @@ const clamp01 = (value: number): number => Math.min(1, Math.max(0, value))
 const resolveControl = (
   control: ProgressControlInput | undefined,
   indeterminate: boolean,
+  defaults: ControlDefaults,
 ): ProgressControl | undefined => {
   if (!control || typeof control !== 'object' || indeterminate) {
     return undefined
@@ -197,19 +292,107 @@ const resolveControl = (
   return {
     mode: CONTROL_MODES.includes(control.mode as ControlMode)
       ? (control.mode as ControlMode)
-      : 'direct',
-    riseRate: positive(control.riseRate, CONTROL_DEFAULT_RISE),
+      : defaults.behavior,
+    riseRate: positive(control.riseRate, defaults.riseRate),
     fallRate:
       typeof control.fallRate === 'number' && Number.isFinite(control.fallRate)
         ? Math.max(0, control.fallRate)
-        : CONTROL_DEFAULT_FALL,
-    pulseGain: positive(control.pulseGain, CONTROL_DEFAULT_PULSE_GAIN),
+        : defaults.fallRate,
+    pulseGain: positive(control.pulseGain, defaults.pulseGain),
     startAt:
       typeof control.startAt === 'number' && Number.isFinite(control.startAt)
         ? clamp01(control.startAt)
-        : 0,
-    completeAtFull: control.completeAtFull !== false,
-    failAtEmpty: control.failAtEmpty === true,
+        : defaults.startAt,
+    completeAtFull:
+      typeof control.completeAtFull === 'boolean'
+        ? control.completeAtFull
+        : defaults.completeAtFull,
+    failAtEmpty:
+      typeof control.failAtEmpty === 'boolean' ? control.failAtEmpty : defaults.failAtEmpty,
+  }
+}
+
+interface FamilyView {
+  color: string
+  duration: number
+  position: ProgressPosition
+  barDirection: BarDirection
+  circleDirection: CircleDirection
+  mode: ProgressMode
+  background: boolean
+  labelPosition: LabelPosition
+  circleSize: number
+  showPercentage: boolean
+  showTime: boolean
+}
+
+const resolveFamily = (
+  defaults: ProgressDefaults,
+  indeterminate: boolean,
+  control: ProgressControl | undefined,
+  steps: number | undefined,
+): FamilyView => {
+  if (indeterminate) {
+    const family = defaults.loading
+    return {
+      color: family.color,
+      duration: family.cycle,
+      position: family.position,
+      barDirection: family.barDirection,
+      circleDirection: family.circleDirection,
+      mode: 'fill',
+      background: family.background,
+      labelPosition: family.labelPosition,
+      circleSize: family.circleSize,
+      showPercentage: false,
+      showTime: family.showTime,
+    }
+  }
+  if (control) {
+    const family = defaults.control
+    return {
+      color: family.color,
+      duration: defaults.progress.duration,
+      position: family.position,
+      barDirection: family.barDirection,
+      circleDirection: family.circleDirection,
+      mode: 'fill',
+      background: family.background,
+      labelPosition: family.labelPosition,
+      circleSize: family.circleSize,
+      showPercentage: family.showPercentage,
+      showTime: false,
+    }
+  }
+  if (steps) {
+    const family = defaults.steps
+    return {
+      color: family.color,
+      duration: defaults.progress.duration,
+      position: family.position,
+      barDirection: 'left-right',
+      circleDirection: 'clockwise',
+      mode: 'fill',
+      background: family.background,
+      labelPosition: 'bottom',
+      circleSize: CIRCLE_DEFAULT_SIZE,
+      showPercentage: family.showCounter,
+      showTime: false,
+    }
+  }
+  const family = defaults.progress
+  return {
+    color: family.color,
+    duration: family.duration,
+    position: family.position,
+    barDirection: family.barDirection,
+    circleDirection: family.circleDirection,
+    mode: family.mode,
+    background: family.background,
+    labelPosition: family.labelPosition,
+    circleSize: family.circleSize,
+    showPercentage: family.showPercentage,
+    showTime: family.showTime,
   }
 }
 
@@ -230,19 +413,9 @@ export const normalizeProgress = (
   const shape = PROGRESS_SHAPES.includes(input.shape as ProgressShape)
     ? (input.shape as ProgressShape)
     : 'bar'
-  const size =
-    typeof input.size === 'number' && Number.isFinite(input.size)
-      ? Math.min(CIRCLE_MAX_SIZE, Math.max(CIRCLE_MIN_SIZE, Math.round(input.size)))
-      : defaults.circleSize
   const label = typeof input.label === 'string' ? input.label.trim() : ''
   const indeterminate = input.indeterminate === true
-  const duration =
-    typeof input.duration === 'number' && Number.isFinite(input.duration)
-      ? Math.max(MIN_DURATION, Math.floor(input.duration))
-      : indeterminate
-        ? defaults.loadingCycle
-        : defaults.duration
-  const control = resolveControl(input.control, indeterminate)
+  const control = resolveControl(input.control, indeterminate, defaults.control)
   const steps =
     shape === 'bar' &&
     !indeterminate &&
@@ -251,10 +424,20 @@ export const normalizeProgress = (
     Number.isFinite(input.steps)
       ? Math.min(STEPS_MAX, Math.max(1, Math.round(input.steps)))
       : undefined
+  const family = resolveFamily(defaults, indeterminate, control, steps)
+  const size =
+    typeof input.size === 'number' && Number.isFinite(input.size)
+      ? Math.min(CIRCLE_MAX_SIZE, Math.max(CIRCLE_MIN_SIZE, Math.round(input.size)))
+      : family.circleSize
+  const duration =
+    typeof input.duration === 'number' && Number.isFinite(input.duration)
+      ? Math.max(MIN_DURATION, Math.floor(input.duration))
+      : family.duration
+  const wantsPercentage =
+    typeof input.showPercentage === 'boolean' ? input.showPercentage : family.showPercentage
   const showPercentage =
-    input.showPercentage === true &&
-    !indeterminate &&
-    !(shape === 'circle' && size < CIRCLE_CENTER_MIN_SIZE)
+    wantsPercentage && !indeterminate && !(shape === 'circle' && size < CIRCLE_CENTER_MIN_SIZE)
+  const wantsTime = typeof input.showTime === 'boolean' ? input.showTime : family.showTime
 
   return {
     id,
@@ -263,29 +446,35 @@ export const normalizeProgress = (
     icon: typeof input.icon === 'string' && ICON_PATTERN.test(input.icon) ? input.icon : undefined,
     labelPosition: LABEL_POSITIONS.includes(input.labelPosition as LabelPosition)
       ? (input.labelPosition as LabelPosition)
-      : 'bottom',
+      : family.labelPosition,
     duration,
-    direction: resolveDirection(shape, input.direction, indeterminate),
+    direction: resolveDirection(
+      shape,
+      input.direction,
+      indeterminate,
+      family.barDirection,
+      family.circleDirection,
+    ),
     mode: PROGRESS_MODES.includes(input.mode as ProgressMode)
       ? (input.mode as ProgressMode)
-      : 'fill',
-    color:
-      typeof input.color === 'string' && isValidHex(input.color) ? input.color : defaults.color,
+      : family.mode,
+    color: typeof input.color === 'string' && isValidHex(input.color) ? input.color : family.color,
     showPercentage,
     showTime:
-      input.showTime === true &&
+      wantsTime &&
       !control &&
       !steps &&
       !(shape === 'circle' && size < CIRCLE_CENTER_MIN_SIZE) &&
       !(shape === 'circle' && showPercentage),
-    background: shape === 'circle' ? false : input.background !== false,
+    background:
+      shape === 'circle'
+        ? false
+        : typeof input.background === 'boolean'
+          ? input.background
+          : family.background,
     size,
     indeterminate,
-    position: resolvePosition(
-      indeterminate,
-      input.position,
-      indeterminate ? defaults.loadingPosition : defaults.position,
-    ),
+    position: resolvePosition(indeterminate, input.position, family.position),
     control,
     steps,
     startedAt: Date.now(),

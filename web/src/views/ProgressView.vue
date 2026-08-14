@@ -2,7 +2,7 @@
 import { onBeforeUnmount, onMounted } from 'vue'
 import ProgressCenter from '@/components/progress/ProgressCenter.vue'
 import { useProgressStore } from '@/stores/progress'
-import type { ProgressConfigInput } from '@/stores/progress'
+import type { ProgressConfigInput } from '@/utils/progressConfig'
 import { sendNuiCallback } from '@/utils/nui'
 import { applyLocale } from '@/utils/locale'
 import type { LocalePayload } from '@/utils/locale'

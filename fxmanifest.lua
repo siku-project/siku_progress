@@ -11,7 +11,10 @@ lua54 'yes'
 
 shared_scripts {
   '@siku_core/init.lua',
+  'config/control.lua',
+  'config/loading.lua',
   'config/progress.lua',
+  'config/steps.lua',
   'config/translation.lua',
   'shared/utils/locale.lua',
 }
