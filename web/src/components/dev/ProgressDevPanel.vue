@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import IcePanel from '@/components/ui/IcePanel.vue'
 import ProgressCenter from '@/components/progress/ProgressCenter.vue'
 import DevField from '@/components/dev/controls/DevField.vue'
@@ -9,11 +9,18 @@ import DevCheck from '@/components/dev/controls/DevCheck.vue'
 import DevButton from '@/components/dev/controls/DevButton.vue'
 import { useProgressStore } from '@/stores/progress'
 import { DEFAULT_COLOR, LABEL_ADVISED_MAX } from '@/utils/progress'
-import type { ProgressDirection, ProgressMode } from '@/utils/progress'
+import type {
+  LabelPosition,
+  ProgressDirection,
+  ProgressMode,
+  ProgressShape,
+} from '@/utils/progress'
 
 const store = useProgressStore()
 
+const shape = ref<ProgressShape>('bar')
 const label = ref('Fouille du véhicule…')
+const labelPosition = ref<LabelPosition>('bottom')
 const direction = ref<ProgressDirection>('left-right')
 const mode = ref<ProgressMode>('fill')
 const duration = ref(5000)
@@ -21,11 +28,23 @@ const color = ref(DEFAULT_COLOR)
 const showPercentage = ref(true)
 const background = ref(true)
 
-const DIRECTION_OPTIONS = [
+const SHAPE_OPTIONS = [
+  { value: 'bar', label: 'Barre' },
+  { value: 'circle', label: 'Cercle' },
+]
+
+const BAR_DIRECTION_OPTIONS = [
   { value: 'left-right', label: 'Gauche → droite' },
   { value: 'right-left', label: 'Droite → gauche' },
   { value: 'edges-center', label: 'Bords → centre' },
   { value: 'center-edges', label: 'Centre → bords' },
+]
+
+const CIRCLE_DIRECTION_OPTIONS = [
+  { value: 'clockwise', label: 'Horaire' },
+  { value: 'counter-clockwise', label: 'Anti-horaire' },
+  { value: 'bottom-top', label: 'Bas → haut' },
+  { value: 'top-bottom', label: 'Haut → bas' },
 ]
 
 const MODE_OPTIONS = [
@@ -33,7 +52,22 @@ const MODE_OPTIONS = [
   { value: 'drain', label: 'Vidage' },
 ]
 
+const LABEL_POSITION_OPTIONS = [
+  { value: 'top', label: 'Au-dessus' },
+  { value: 'bottom', label: 'En dessous' },
+]
+
 const COLOR_PRESETS = ['#a1cbe8', '#ecf6ff', '#34d3a6', '#f0be60', '#f46e7a']
+
+const isCircle = computed(() => shape.value === 'circle')
+
+const directionOptions = computed(() =>
+  isCircle.value ? CIRCLE_DIRECTION_OPTIONS : BAR_DIRECTION_OPTIONS,
+)
+
+watch(shape, (value) => {
+  direction.value = value === 'circle' ? 'clockwise' : 'left-right'
+})
 
 const labelHint = computed(() => `${label.value.length}/${LABEL_ADVISED_MAX} conseillés`)
 const labelHintTone = computed(() =>
@@ -42,7 +76,9 @@ const labelHintTone = computed(() =>
 
 const start = (): void => {
   store.start({
+    shape: shape.value,
     label: label.value,
+    labelPosition: labelPosition.value,
     direction: direction.value,
     mode: mode.value,
     duration: duration.value,
@@ -87,6 +123,31 @@ const presetHold = (): void => {
   })
 }
 
+const presetCircle = (): void => {
+  store.start({
+    shape: 'circle',
+    label: 'Réanimation',
+    labelPosition: 'bottom',
+    direction: 'clockwise',
+    mode: 'fill',
+    duration: 6000,
+    showPercentage: true,
+  })
+}
+
+const presetCircleDrain = (): void => {
+  store.start({
+    shape: 'circle',
+    label: 'Oxygène',
+    labelPosition: 'top',
+    direction: 'bottom-top',
+    mode: 'drain',
+    duration: 5000,
+    color: '#f0be60',
+    showPercentage: true,
+  })
+}
+
 const presetMinimal = (): void => {
   store.start({
     direction: 'left-right',
@@ -105,8 +166,12 @@ const presetMinimal = (): void => {
       <div class="panel__body">
         <p class="ice-title panel__title text-[10px]">Progression — Dev</p>
 
+        <DevField label="Forme">
+          <DevToggleGroup v-model="shape" :options="SHAPE_OPTIONS" />
+        </DevField>
+
         <DevField label="Direction">
-          <DevToggleGroup v-model="direction" :options="DIRECTION_OPTIONS" :columns="2" />
+          <DevToggleGroup v-model="direction" :options="directionOptions" :columns="2" />
         </DevField>
 
         <DevField label="Mode">
@@ -115,6 +180,10 @@ const presetMinimal = (): void => {
 
         <DevField label="Texte" :hint="labelHint" :hint-tone="labelHintTone">
           <input v-model="label" type="text" />
+        </DevField>
+
+        <DevField v-if="isCircle" label="Position du texte">
+          <DevToggleGroup v-model="labelPosition" :options="LABEL_POSITION_OPTIONS" />
         </DevField>
 
         <div class="panel__row">
@@ -131,7 +200,7 @@ const presetMinimal = (): void => {
 
         <DevCheck v-model="showPercentage" label="Afficher le pourcentage" />
 
-        <DevCheck v-model="background" label="Fond de panneau" />
+        <DevCheck v-if="!isCircle" v-model="background" label="Fond de panneau" />
 
         <div class="panel__actions">
           <DevButton variant="primary" @click="start">Lancer</DevButton>
@@ -145,6 +214,8 @@ const presetMinimal = (): void => {
           <DevButton variant="ghost" @click="presetLockpick">Crochetage 8s</DevButton>
           <DevButton variant="ghost" @click="presetHold">Attente 4s</DevButton>
           <DevButton variant="ghost" @click="presetMinimal">Minimal 2,5s</DevButton>
+          <DevButton variant="ghost" @click="presetCircle">Cercle 6s</DevButton>
+          <DevButton variant="ghost" @click="presetCircleDrain">Oxygène 5s</DevButton>
         </div>
       </div>
     </IcePanel>

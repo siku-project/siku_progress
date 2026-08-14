@@ -1,16 +1,21 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import ProgressBar from './ProgressBar.vue'
+import ProgressCircle from './ProgressCircle.vue'
 import { useProgressStore } from '@/stores/progress'
 
 const store = useProgressStore()
 const { current, phase, stoppedAt } = storeToRefs(store)
+
+const widget = computed(() => (current.value?.shape === 'circle' ? ProgressCircle : ProgressBar))
 </script>
 
 <template>
   <div class="stage">
     <Transition name="progress-pop">
-      <ProgressBar
+      <component
+        :is="widget"
         v-if="current"
         :key="current.id"
         :item="current"

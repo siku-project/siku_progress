@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import type { ProgressItem } from '@/utils/progress'
+import type { BarDirection, ProgressItem } from '@/utils/progress'
 import { hexToRgba } from '@/utils/progress'
 import { resolveSegments } from '@/utils/progressGeometry'
 import type { ProgressSegment } from '@/utils/progressGeometry'
@@ -23,7 +23,7 @@ onMounted(() => {
 })
 
 const segments = computed<ProgressSegment[]>(() =>
-  resolveSegments(props.item.direction, props.item.mode),
+  resolveSegments(props.item.direction as BarDirection, props.item.mode),
 )
 
 const stoppedRatio = computed<number | null>(() => {
