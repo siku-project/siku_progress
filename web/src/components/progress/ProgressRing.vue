@@ -11,12 +11,13 @@ const props = defineProps<{
   stoppedAt: number | null
 }>()
 
-const SIZE = 120
-const STROKE = 10
 const GLOW = 4
-const RADIUS = (SIZE - STROKE - GLOW) / 2 - 1
-const CIRCUMFERENCE = 2 * Math.PI * RADIUS
-const CENTER = SIZE / 2
+
+const size = computed(() => props.item.size)
+const stroke = computed(() => Math.max(6, Math.round(size.value / 12)))
+const radius = computed(() => (size.value - stroke.value - GLOW) / 2 - 1)
+const circumference = computed(() => 2 * Math.PI * radius.value)
+const center = computed(() => size.value / 2)
 
 const running = ref(false)
 
@@ -47,10 +48,10 @@ const arcRatio = computed<number>(() => {
   return running.value ? sweep.value.to : sweep.value.from
 })
 
-const arcLength = computed(() => arcRatio.value * CIRCUMFERENCE)
+const arcLength = computed(() => arcRatio.value * circumference.value)
 
 const dashArray = computed(
-  () => `${arcLength.value} ${Math.max(CIRCUMFERENCE - arcLength.value, 0)}`,
+  () => `${arcLength.value} ${Math.max(circumference.value - arcLength.value, 0)}`,
 )
 
 const dashOffset = computed(() => {
@@ -71,8 +72,8 @@ const transition = computed(() => {
 })
 
 const groupTransform = computed(() => {
-  const rotate = `rotate(${sweep.value.rotate} ${CENTER} ${CENTER})`
-  return sweep.value.mirror ? `matrix(-1 0 0 1 ${SIZE} 0) ${rotate}` : rotate
+  const rotate = `rotate(${sweep.value.rotate} ${center.value} ${center.value})`
+  return sweep.value.mirror ? `matrix(-1 0 0 1 ${size.value} 0) ${rotate}` : rotate
 })
 
 const dashStyle = computed(() => ({
@@ -87,37 +88,37 @@ const dashStyle = computed(() => ({
     class="gauge"
     :class="{ 'gauge--done': phase === 'done', 'gauge--cancelled': phase === 'cancelled' }"
   >
-    <svg :width="SIZE" :height="SIZE" :viewBox="`0 0 ${SIZE} ${SIZE}`" aria-hidden="true">
+    <svg :width="size" :height="size" :viewBox="`0 0 ${size} ${size}`" aria-hidden="true">
       <circle
         class="gauge__border"
-        :cx="CENTER"
-        :cy="CENTER"
-        :r="RADIUS"
-        :stroke-width="STROKE + 2"
+        :cx="center"
+        :cy="center"
+        :r="radius"
+        :stroke-width="stroke + 2"
       />
-      <circle class="gauge__track" :cx="CENTER" :cy="CENTER" :r="RADIUS" :stroke-width="STROKE" />
+      <circle class="gauge__track" :cx="center" :cy="center" :r="radius" :stroke-width="stroke" />
       <g :transform="groupTransform">
         <circle
           class="gauge__glow"
-          :cx="CENTER"
-          :cy="CENTER"
-          :r="RADIUS"
-          :stroke-width="STROKE + GLOW"
+          :cx="center"
+          :cy="center"
+          :r="radius"
+          :stroke-width="stroke + GLOW"
           :style="{ ...dashStyle, stroke: hexToRgba(item.color, 0.11) }"
         />
         <circle
           class="gauge__arc"
-          :cx="CENTER"
-          :cy="CENTER"
-          :r="RADIUS"
-          :stroke-width="STROKE - 2"
+          :cx="center"
+          :cy="center"
+          :r="radius"
+          :stroke-width="stroke - 2"
           :style="{ ...dashStyle, stroke: hexToRgba(item.color, 0.82) }"
         />
         <circle
           class="gauge__frost"
-          :cx="CENTER"
-          :cy="CENTER"
-          :r="RADIUS"
+          :cx="center"
+          :cy="center"
+          :r="radius"
           :stroke-width="2.5"
           :style="dashStyle"
         />

@@ -1,20 +1,27 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   label: string
   modelValue: boolean
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
 }>()
+
+const toggle = (): void => {
+  if (!props.disabled) {
+    emit('update:modelValue', !props.modelValue)
+  }
+}
 </script>
 
 <template>
   <button
     type="button"
     class="check"
-    :class="{ 'check--on': modelValue }"
-    @click="emit('update:modelValue', !modelValue)"
+    :class="{ 'check--on': modelValue, 'check--disabled': disabled }"
+    @click="toggle"
   >
     <span class="check__box">
       <span v-if="modelValue" class="check__dot"></span>
@@ -41,6 +48,15 @@ const emit = defineEmits<{
 .check:hover,
 .check--on {
   color: rgba(226, 240, 250, 0.88);
+}
+
+.check--disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.check--disabled:hover {
+  color: rgba(198, 224, 243, 0.6);
 }
 
 .check__box {

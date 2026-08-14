@@ -8,7 +8,14 @@ import DevSwatches from '@/components/dev/controls/DevSwatches.vue'
 import DevCheck from '@/components/dev/controls/DevCheck.vue'
 import DevButton from '@/components/dev/controls/DevButton.vue'
 import { useProgressStore } from '@/stores/progress'
-import { DEFAULT_COLOR, LABEL_ADVISED_MAX } from '@/utils/progress'
+import {
+  CIRCLE_DEFAULT_SIZE,
+  CIRCLE_MAX_SIZE,
+  CIRCLE_MIN_SIZE,
+  CIRCLE_PERCENT_MIN_SIZE,
+  DEFAULT_COLOR,
+  LABEL_ADVISED_MAX,
+} from '@/utils/progress'
 import type {
   LabelPosition,
   ProgressDirection,
@@ -27,6 +34,7 @@ const duration = ref(5000)
 const color = ref(DEFAULT_COLOR)
 const showPercentage = ref(true)
 const background = ref(true)
+const circleSize = ref(CIRCLE_DEFAULT_SIZE)
 
 const SHAPE_OPTIONS = [
   { value: 'bar', label: 'Barre' },
@@ -61,6 +69,12 @@ const COLOR_PRESETS = ['#a1cbe8', '#ecf6ff', '#34d3a6', '#f0be60', '#f46e7a']
 
 const isCircle = computed(() => shape.value === 'circle')
 
+const percentUnavailable = computed(
+  () => isCircle.value && circleSize.value < CIRCLE_PERCENT_MIN_SIZE,
+)
+
+const sizeHint = `${CIRCLE_MIN_SIZE}–${CIRCLE_MAX_SIZE} px · % masqué sous ${CIRCLE_PERCENT_MIN_SIZE}`
+
 const directionOptions = computed(() =>
   isCircle.value ? CIRCLE_DIRECTION_OPTIONS : BAR_DIRECTION_OPTIONS,
 )
@@ -85,6 +99,7 @@ const start = (): void => {
     color: color.value,
     showPercentage: showPercentage.value,
     background: background.value,
+    size: circleSize.value,
   })
 }
 
@@ -148,6 +163,17 @@ const presetCircleDrain = (): void => {
   })
 }
 
+const presetCircleMini = (): void => {
+  store.start({
+    shape: 'circle',
+    direction: 'clockwise',
+    mode: 'fill',
+    duration: 3000,
+    size: 64,
+    showPercentage: true,
+  })
+}
+
 const presetMinimal = (): void => {
   store.start({
     direction: 'left-right',
@@ -186,6 +212,16 @@ const presetMinimal = (): void => {
           <DevToggleGroup v-model="labelPosition" :options="LABEL_POSITION_OPTIONS" />
         </DevField>
 
+        <DevField v-if="isCircle" label="Taille (px)" :hint="sizeHint">
+          <input
+            v-model.number="circleSize"
+            type="number"
+            :min="CIRCLE_MIN_SIZE"
+            :max="CIRCLE_MAX_SIZE"
+            step="4"
+          />
+        </DevField>
+
         <div class="panel__row">
           <DevField label="Durée (ms)">
             <input v-model.number="duration" type="number" min="100" step="500" />
@@ -198,7 +234,11 @@ const presetMinimal = (): void => {
 
         <DevSwatches v-model="color" :colors="COLOR_PRESETS" />
 
-        <DevCheck v-model="showPercentage" label="Afficher le pourcentage" />
+        <DevCheck
+          v-model="showPercentage"
+          label="Afficher le pourcentage"
+          :disabled="percentUnavailable"
+        />
 
         <DevCheck v-if="!isCircle" v-model="background" label="Fond de panneau" />
 
@@ -216,6 +256,7 @@ const presetMinimal = (): void => {
           <DevButton variant="ghost" @click="presetMinimal">Minimal 2,5s</DevButton>
           <DevButton variant="ghost" @click="presetCircle">Cercle 6s</DevButton>
           <DevButton variant="ghost" @click="presetCircleDrain">Oxygène 5s</DevButton>
+          <DevButton variant="ghost" @click="presetCircleMini">Cercle mini 3s</DevButton>
         </div>
       </div>
     </IcePanel>

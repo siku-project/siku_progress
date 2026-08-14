@@ -29,6 +29,10 @@ export const LABEL_ADVISED_MAX = 40
 export const MIN_DURATION = 100
 export const DEFAULT_DURATION = 5000
 export const DEFAULT_COLOR = '#a1cbe8'
+export const CIRCLE_MIN_SIZE = 56
+export const CIRCLE_MAX_SIZE = 220
+export const CIRCLE_DEFAULT_SIZE = 120
+export const CIRCLE_PERCENT_MIN_SIZE = 96
 
 const HEX_PATTERN = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
 
@@ -42,6 +46,7 @@ export interface ProgressInput {
   color?: string
   showPercentage?: boolean
   background?: boolean
+  size?: number
 }
 
 export interface ProgressItem {
@@ -55,6 +60,7 @@ export interface ProgressItem {
   color: string
   showPercentage: boolean
   background: boolean
+  size: number
   startedAt: number
 }
 
@@ -94,6 +100,10 @@ export const normalizeProgress = (input: ProgressInput, id: number): ProgressIte
   const shape = PROGRESS_SHAPES.includes(input.shape as ProgressShape)
     ? (input.shape as ProgressShape)
     : 'bar'
+  const size =
+    typeof input.size === 'number' && Number.isFinite(input.size)
+      ? Math.min(CIRCLE_MAX_SIZE, Math.max(CIRCLE_MIN_SIZE, Math.round(input.size)))
+      : CIRCLE_DEFAULT_SIZE
   const label = typeof input.label === 'string' ? input.label.trim() : ''
   const duration =
     typeof input.duration === 'number' && Number.isFinite(input.duration)
@@ -113,8 +123,10 @@ export const normalizeProgress = (input: ProgressInput, id: number): ProgressIte
       ? (input.mode as ProgressMode)
       : 'fill',
     color: typeof input.color === 'string' && isValidHex(input.color) ? input.color : DEFAULT_COLOR,
-    showPercentage: input.showPercentage === true,
+    showPercentage:
+      input.showPercentage === true && !(shape === 'circle' && size < CIRCLE_PERCENT_MIN_SIZE),
     background: shape === 'circle' ? false : input.background !== false,
+    size,
     startedAt: Date.now(),
   }
 }

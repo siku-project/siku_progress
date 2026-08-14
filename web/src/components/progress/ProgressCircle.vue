@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { toRef } from 'vue'
+import { computed, toRef } from 'vue'
 import ProgressRing from './ProgressRing.vue'
 import { useProgressPercentage } from '@/composables/useProgressPercentage'
 import type { ProgressItem } from '@/utils/progress'
@@ -16,6 +16,10 @@ const phase = toRef(props, 'phase')
 const stoppedAt = toRef(props, 'stoppedAt')
 
 const { percent } = useProgressPercentage(item, phase, stoppedAt)
+
+const percentFontSize = computed(
+  () => `${Math.min(21, Math.max(13, Math.round(props.item.size * 0.14)))}px`,
+)
 </script>
 
 <template>
@@ -25,7 +29,13 @@ const { percent } = useProgressPercentage(item, phase, stoppedAt)
     </span>
 
     <ProgressRing :item="item" :phase="phase" :stopped-at="stoppedAt">
-      <span v-if="item.showPercentage" class="circle__percent">{{ percent }}%</span>
+      <span
+        v-if="item.showPercentage"
+        class="circle__percent"
+        :style="{ fontSize: percentFontSize }"
+      >
+        {{ percent }}%
+      </span>
     </ProgressRing>
 
     <span v-if="item.label && item.labelPosition === 'bottom'" class="circle__label">
@@ -62,7 +72,6 @@ const { percent } = useProgressPercentage(item, phase, stoppedAt)
 }
 
 .circle__percent {
-  font-size: 17px;
   font-weight: 300;
   letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums;
