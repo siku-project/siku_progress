@@ -12,7 +12,7 @@ import {
   CIRCLE_DEFAULT_SIZE,
   CIRCLE_MAX_SIZE,
   CIRCLE_MIN_SIZE,
-  CIRCLE_PERCENT_MIN_SIZE,
+  CIRCLE_CENTER_MIN_SIZE,
   DEFAULT_COLOR,
   LABEL_ADVISED_MAX,
 } from '@/utils/progress'
@@ -34,6 +34,7 @@ const mode = ref<ProgressMode>('fill')
 const duration = ref(5000)
 const color = ref(DEFAULT_COLOR)
 const showPercentage = ref(true)
+const showTime = ref(false)
 const background = ref(true)
 const circleSize = ref(CIRCLE_DEFAULT_SIZE)
 
@@ -86,11 +87,15 @@ const LOADING_BAR_DIRECTIONS = [
   { value: 'right-left', label: 'Depuis la droite' },
 ]
 
-const percentUnavailable = computed(
-  () => isCircle.value && circleSize.value < CIRCLE_PERCENT_MIN_SIZE,
+const centerUnavailable = computed(
+  () => isCircle.value && circleSize.value < CIRCLE_CENTER_MIN_SIZE,
 )
 
-const sizeHint = `${CIRCLE_MIN_SIZE}–${CIRCLE_MAX_SIZE} px · % masqué sous ${CIRCLE_PERCENT_MIN_SIZE}`
+const timeLabel = computed(() =>
+  isLoading.value ? 'Afficher le temps estimé' : 'Afficher le temps restant',
+)
+
+const sizeHint = `${CIRCLE_MIN_SIZE}–${CIRCLE_MAX_SIZE} px · centre masqué sous ${CIRCLE_CENTER_MIN_SIZE}`
 
 const directionOptions = computed(() => {
   if (isCircle.value) {
@@ -103,6 +108,18 @@ const durationLabel = computed(() => (isLoading.value ? 'Cycle (ms)' : 'Durée (
 
 watch([shape, kind], ([shapeValue]) => {
   direction.value = shapeValue === 'circle' ? 'clockwise' : 'left-right'
+})
+
+watch(showTime, (value) => {
+  if (value && isCircle.value && showPercentage.value) {
+    showPercentage.value = false
+  }
+})
+
+watch(showPercentage, (value) => {
+  if (value && isCircle.value && showTime.value) {
+    showTime.value = false
+  }
 })
 
 const labelHint = computed(() => `${label.value.length}/${LABEL_ADVISED_MAX} conseillés`)
@@ -121,6 +138,7 @@ const start = (): void => {
     duration: duration.value,
     color: color.value,
     showPercentage: showPercentage.value,
+    showTime: showTime.value,
     background: background.value,
     size: circleSize.value,
   })
@@ -141,6 +159,7 @@ const presetSearch = (): void => {
     mode: 'fill',
     duration: 5000,
     showPercentage: true,
+    showTime: true,
   })
 }
 
@@ -205,6 +224,7 @@ const presetLoadingBar = (): void => {
   store.start({
     indeterminate: true,
     label: 'Connexion au serveur…',
+    showTime: true,
   })
 }
 
@@ -215,6 +235,7 @@ const presetLoadingCircle = (): void => {
     label: 'Recherche',
     labelPosition: 'bottom',
     size: 96,
+    showTime: true,
   })
 }
 
@@ -286,8 +307,10 @@ const presetMinimal = (): void => {
           v-if="!isLoading"
           v-model="showPercentage"
           label="Afficher le pourcentage"
-          :disabled="percentUnavailable"
+          :disabled="centerUnavailable"
         />
+
+        <DevCheck v-model="showTime" :label="timeLabel" :disabled="centerUnavailable" />
 
         <DevCheck v-if="!isCircle" v-model="background" label="Fond de panneau" />
 

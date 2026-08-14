@@ -3,6 +3,7 @@ import { computed, toRef } from 'vue'
 import IcePanel from '@/components/ui/IcePanel.vue'
 import ProgressTrack from './ProgressTrack.vue'
 import { useProgressPercentage } from '@/composables/useProgressPercentage'
+import { useProgressTime } from '@/composables/useProgressTime'
 import type { ProgressItem } from '@/utils/progress'
 import type { ProgressPhase } from '@/stores/progress'
 
@@ -17,8 +18,11 @@ const phase = toRef(props, 'phase')
 const stoppedAt = toRef(props, 'stoppedAt')
 
 const { percent } = useProgressPercentage(item, phase, stoppedAt)
+const { time } = useProgressTime(item, phase, stoppedAt)
 
-const hasHeader = computed(() => Boolean(props.item.label) || props.item.showPercentage)
+const hasMeta = computed(() => props.item.showPercentage || props.item.showTime)
+
+const hasHeader = computed(() => Boolean(props.item.label) || hasMeta.value)
 
 const celebrate = computed(() => props.phase === 'done' && !props.item.indeterminate)
 
@@ -37,7 +41,10 @@ const wrapper = computed(() => (props.item.background ? IcePanel : 'div'))
       >
         <div v-if="hasHeader" class="bar__header">
           <span v-if="item.label" class="bar__label">{{ item.label }}</span>
-          <span v-if="item.showPercentage" class="bar__percent">{{ percent }}%</span>
+          <span v-if="hasMeta" class="bar__meta">
+            <span v-if="item.showPercentage" class="bar__percent">{{ percent }}%</span>
+            <span v-if="item.showTime && time" class="bar__time">{{ time }}</span>
+          </span>
         </div>
 
         <ProgressTrack :item="item" :phase="phase" :stopped-at="stoppedAt" />
@@ -110,13 +117,31 @@ const wrapper = computed(() => (props.item.background ? IcePanel : 'div'))
   overflow-wrap: anywhere;
 }
 
-.bar__percent {
+.bar__meta {
   margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.bar__percent {
   font-size: 12px;
   font-weight: 400;
   letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
   color: rgba(230, 242, 252, 0.95);
+  text-shadow:
+    0 1px 3px rgba(5, 14, 30, 0.85),
+    0 1px 10px rgba(5, 14, 30, 0.6);
+}
+
+.bar__time {
+  font-size: 10.5px;
+  font-weight: 300;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  color: rgba(198, 224, 243, 0.68);
   text-shadow:
     0 1px 3px rgba(5, 14, 30, 0.85),
     0 1px 10px rgba(5, 14, 30, 0.6);

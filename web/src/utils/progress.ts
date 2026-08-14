@@ -33,7 +33,7 @@ export const SUCCESS_COLOR = '#34d3a6'
 export const CIRCLE_MIN_SIZE = 64
 export const CIRCLE_MAX_SIZE = 156
 export const CIRCLE_DEFAULT_SIZE = 120
-export const CIRCLE_PERCENT_MIN_SIZE = 96
+export const CIRCLE_CENTER_MIN_SIZE = 96
 export const LOADING_DEFAULT_CYCLE = 1400
 
 const HEX_PATTERN = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
@@ -47,6 +47,7 @@ export interface ProgressInput {
   mode?: ProgressMode
   color?: string
   showPercentage?: boolean
+  showTime?: boolean
   background?: boolean
   size?: number
   indeterminate?: boolean
@@ -62,6 +63,7 @@ export interface ProgressItem {
   mode: ProgressMode
   color: string
   showPercentage: boolean
+  showTime: boolean
   background: boolean
   size: number
   indeterminate: boolean
@@ -123,6 +125,10 @@ export const normalizeProgress = (input: ProgressInput, id: number): ProgressIte
       : indeterminate
         ? LOADING_DEFAULT_CYCLE
         : DEFAULT_DURATION
+  const showPercentage =
+    input.showPercentage === true &&
+    !indeterminate &&
+    !(shape === 'circle' && size < CIRCLE_CENTER_MIN_SIZE)
 
   return {
     id,
@@ -137,13 +143,31 @@ export const normalizeProgress = (input: ProgressInput, id: number): ProgressIte
       ? (input.mode as ProgressMode)
       : 'fill',
     color: typeof input.color === 'string' && isValidHex(input.color) ? input.color : DEFAULT_COLOR,
-    showPercentage:
-      input.showPercentage === true &&
-      !indeterminate &&
-      !(shape === 'circle' && size < CIRCLE_PERCENT_MIN_SIZE),
+    showPercentage,
+    showTime:
+      input.showTime === true &&
+      !(shape === 'circle' && size < CIRCLE_CENTER_MIN_SIZE) &&
+      !(shape === 'circle' && showPercentage),
     background: shape === 'circle' ? false : input.background !== false,
     size,
     indeterminate,
     startedAt: Date.now(),
   }
+}
+
+export const formatRemaining = (ms: number, approximate = false): string => {
+  const clamped = Math.max(0, ms)
+  const prefix = approximate ? '~' : ''
+
+  if (clamped >= 60000) {
+    const minutes = Math.floor(clamped / 60000)
+    const seconds = Math.round((clamped % 60000) / 1000)
+    return `${prefix}${minutes}:${String(seconds).padStart(2, '0')}`
+  }
+
+  if (clamped >= 10000) {
+    return `${prefix}${Math.round(clamped / 1000)} s`
+  }
+
+  return `${prefix}${(clamped / 1000).toFixed(1).replace('.', ',')} s`
 }

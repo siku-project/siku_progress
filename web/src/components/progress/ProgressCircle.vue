@@ -2,6 +2,7 @@
 import { computed, toRef } from 'vue'
 import ProgressRing from './ProgressRing.vue'
 import { useProgressPercentage } from '@/composables/useProgressPercentage'
+import { useProgressTime } from '@/composables/useProgressTime'
 import type { ProgressItem } from '@/utils/progress'
 import type { ProgressPhase } from '@/stores/progress'
 
@@ -16,9 +17,14 @@ const phase = toRef(props, 'phase')
 const stoppedAt = toRef(props, 'stoppedAt')
 
 const { percent } = useProgressPercentage(item, phase, stoppedAt)
+const { time } = useProgressTime(item, phase, stoppedAt)
 
 const percentFontSize = computed(
   () => `${Math.min(21, Math.max(13, Math.round(props.item.size * 0.14)))}px`,
+)
+
+const timeFontSize = computed(
+  () => `${Math.min(17, Math.max(11, Math.round(props.item.size * 0.115)))}px`,
 )
 </script>
 
@@ -35,6 +41,13 @@ const percentFontSize = computed(
         :style="{ fontSize: percentFontSize }"
       >
         {{ percent }}%
+      </span>
+      <span
+        v-else-if="item.showTime && time"
+        class="circle__time"
+        :style="{ fontSize: timeFontSize }"
+      >
+        {{ time }}
       </span>
     </ProgressRing>
 
@@ -69,6 +82,16 @@ const percentFontSize = computed(
     0 1px 3px rgba(5, 14, 30, 0.85),
     0 1px 10px rgba(5, 14, 30, 0.6);
   overflow-wrap: anywhere;
+}
+
+.circle__time {
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  font-variant-numeric: tabular-nums;
+  color: rgba(230, 242, 252, 0.94);
+  text-shadow:
+    0 1px 3px rgba(5, 14, 30, 0.85),
+    0 1px 10px rgba(5, 14, 30, 0.6);
 }
 
 .circle__percent {
