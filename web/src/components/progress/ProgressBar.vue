@@ -32,7 +32,11 @@ const wrapper = computed(() => (props.item.background ? IcePanel : 'div'))
 <template>
   <div
     class="bar"
-    :class="{ 'bar--cancelled': phase === 'cancelled', 'bar--celebrate': celebrate }"
+    :class="{
+      'bar--cancelled': phase === 'cancelled',
+      'bar--celebrate': celebrate,
+      'bar--failed': phase === 'failed',
+    }"
   >
     <component :is="wrapper" class="bar__panel">
       <div
@@ -62,6 +66,30 @@ const wrapper = computed(() => (props.item.background ? IcePanel : 'div'))
 
 .bar--cancelled {
   filter: saturate(0.5);
+}
+
+.bar--failed .bar__label,
+.bar--failed .bar__percent,
+.bar--failed .bar__time {
+  animation: text-flicker 520ms steps(2) 2;
+}
+
+@keyframes text-flicker {
+  0% {
+    opacity: 1;
+  }
+  25% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.9;
+  }
+  75% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 .bar--celebrate {

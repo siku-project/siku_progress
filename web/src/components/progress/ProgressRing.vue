@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import type { CircleDirection, ProgressItem } from '@/utils/progress'
-import { SUCCESS_COLOR, hexToRgba } from '@/utils/progress'
+import { FAIL_COLOR, FAIL_SHARD_DELAYS, SUCCESS_COLOR, hexToRgba } from '@/utils/progress'
 import { resolveCircleSweep } from '@/utils/progressGeometry'
 import type { ProgressPhase } from '@/stores/progress'
 
@@ -34,16 +34,22 @@ const sweep = computed(() =>
 )
 
 const stoppedRatio = computed<number | null>(() => {
-  if (props.phase !== 'cancelled' || !props.stoppedAt) {
+  if ((props.phase !== 'cancelled' && props.phase !== 'failed') || !props.stoppedAt) {
     return null
   }
   const ratio = (props.stoppedAt - props.item.startedAt) / props.item.duration
   return Math.min(1, Math.max(0, ratio))
 })
 
-const effectiveColor = computed(() =>
-  props.item.indeterminate && props.phase === 'done' ? SUCCESS_COLOR : props.item.color,
-)
+const effectiveColor = computed(() => {
+  if (props.item.indeterminate && props.phase === 'done') {
+    return SUCCESS_COLOR
+  }
+  if (props.phase === 'failed') {
+    return FAIL_COLOR
+  }
+  return props.item.color
+})
 
 const arcRatio = computed<number>(() => {
   if (props.item.indeterminate) {
@@ -75,7 +81,12 @@ const dashOffset = computed(() => {
 })
 
 const transition = computed(() => {
-  if (props.item.indeterminate || props.phase === 'cancelled' || !running.value) {
+  if (
+    props.item.indeterminate ||
+    props.phase === 'cancelled' ||
+    props.phase === 'failed' ||
+    !running.value
+  ) {
     return 'none'
   }
   return `stroke-dasharray ${props.item.duration}ms linear, stroke-dashoffset ${props.item.duration}ms linear`
@@ -100,6 +111,7 @@ const dashStyle = computed(() => ({
       'gauge--done': phase === 'done' && item.indeterminate,
       'gauge--celebrate': phase === 'done' && !item.indeterminate,
       'gauge--cancelled': phase === 'cancelled',
+      'gauge--failed': phase === 'failed',
     }"
   >
     <svg
@@ -154,6 +166,22 @@ const dashStyle = computed(() => ({
           :style="dashStyle"
         />
       </g>
+      <template v-if="phase === 'failed'">
+        <circle
+          v-for="(delay, index) in FAIL_SHARD_DELAYS"
+          :key="index"
+          class="gauge__shard"
+          :cx="center"
+          :cy="center"
+          :r="radius"
+          :stroke-width="stroke + 3"
+          :style="{
+            strokeDasharray: `${circumference / FAIL_SHARD_DELAYS.length + 1} ${circumference}`,
+            strokeDashoffset: -((index * circumference) / FAIL_SHARD_DELAYS.length),
+            animationDelay: `${delay}ms`,
+          }"
+        />
+      </template>
     </svg>
 
     <div class="gauge__center">
@@ -258,5 +286,53 @@ const dashStyle = computed(() => ({
 
 .gauge--cancelled {
   filter: saturate(0.35) brightness(0.85);
+}
+
+.gauge--failed {
+  animation: gauge-glitch 440ms steps(1) 2;
+}
+
+.gauge__shard {
+  fill: none;
+  stroke: rgba(8, 20, 37, 0.97);
+  stroke-linecap: butt;
+  opacity: 0;
+  animation: shard-in 60ms steps(1) forwards;
+}
+
+@keyframes shard-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes gauge-glitch {
+  0% {
+    transform: translate(0, 0);
+  }
+  12% {
+    transform: translate(-2px, 1px);
+  }
+  24% {
+    transform: translate(2px, -1px);
+  }
+  36% {
+    transform: translate(-1px, -1px);
+  }
+  48% {
+    transform: translate(2px, 1px);
+  }
+  60% {
+    transform: translate(-2px, 0);
+  }
+  72% {
+    transform: translate(1px, -1px);
+  }
+  86% {
+    transform: translate(-1px, 1px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
 }
 </style>

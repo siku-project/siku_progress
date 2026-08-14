@@ -47,7 +47,7 @@ export const useProgressPercentage = (
     if (value === 'done') {
       stop()
       apply(1)
-    } else if (value === 'cancelled') {
+    } else if (value === 'cancelled' || value === 'failed') {
       stop()
       apply(
         stoppedAt.value

@@ -71,7 +71,7 @@ export const useProgressTime = (
       time.value = null
     } else if (value === 'done') {
       time.value = formatRemaining(0)
-    } else if (value === 'cancelled' && stoppedAt.value) {
+    } else if ((value === 'cancelled' || value === 'failed') && stoppedAt.value) {
       time.value = formatRemaining(item.value.startedAt + item.value.duration - stoppedAt.value)
     }
   })

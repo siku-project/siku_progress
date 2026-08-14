@@ -152,6 +152,10 @@ const stop = (): void => {
   store.stop()
 }
 
+const fail = (): void => {
+  store.fail()
+}
+
 const presetSearch = (): void => {
   store.start({
     label: 'Fouille en cours…',
@@ -317,6 +321,7 @@ const presetMinimal = (): void => {
         <div class="panel__actions">
           <DevButton variant="primary" @click="start">Lancer</DevButton>
           <DevButton @click="stop">Terminer</DevButton>
+          <DevButton v-if="!isLoading" @click="fail">Échouer</DevButton>
           <DevButton @click="cancel">Annuler</DevButton>
         </div>
 

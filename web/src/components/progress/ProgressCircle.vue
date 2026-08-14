@@ -29,7 +29,10 @@ const timeFontSize = computed(
 </script>
 
 <template>
-  <div class="circle" :class="{ 'circle--cancelled': phase === 'cancelled' }">
+  <div
+    class="circle"
+    :class="{ 'circle--cancelled': phase === 'cancelled', 'circle--failed': phase === 'failed' }"
+  >
     <span v-if="item.label && item.labelPosition === 'top'" class="circle__label">
       {{ item.label }}
     </span>
@@ -69,6 +72,30 @@ const timeFontSize = computed(
 
 .circle--cancelled {
   filter: saturate(0.5);
+}
+
+.circle--failed .circle__label,
+.circle--failed .circle__percent,
+.circle--failed .circle__time {
+  animation: text-flicker 520ms steps(2) 2;
+}
+
+@keyframes text-flicker {
+  0% {
+    opacity: 1;
+  }
+  25% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.9;
+  }
+  75% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 .circle__label {

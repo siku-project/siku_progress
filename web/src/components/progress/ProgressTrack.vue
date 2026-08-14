@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import type { BarDirection, ProgressItem } from '@/utils/progress'
-import { SUCCESS_COLOR, hexToRgba } from '@/utils/progress'
+import { FAIL_COLOR, FAIL_SHARD_DELAYS, SUCCESS_COLOR, hexToRgba } from '@/utils/progress'
 import { resolveSegments } from '@/utils/progressGeometry'
 import type { ProgressSegment } from '@/utils/progressGeometry'
 import type { ProgressPhase } from '@/stores/progress'
@@ -27,7 +27,7 @@ const segments = computed<ProgressSegment[]>(() =>
 )
 
 const stoppedRatio = computed<number | null>(() => {
-  if (props.phase !== 'cancelled' || !props.stoppedAt) {
+  if ((props.phase !== 'cancelled' && props.phase !== 'failed') || !props.stoppedAt) {
     return null
   }
   const ratio = (props.stoppedAt - props.item.startedAt) / props.item.duration
@@ -42,7 +42,7 @@ const scaleFor = (segment: ProgressSegment): number => {
 }
 
 const transitionFor = (): string => {
-  if (props.phase === 'cancelled') {
+  if (props.phase === 'cancelled' || props.phase === 'failed') {
     return '0ms'
   }
   return running.value ? `${props.item.duration}ms` : '0ms'
@@ -53,7 +53,7 @@ const styleFor = (color: string) => ({
   boxShadow: `inset 0 1px 0 rgba(255, 255, 255, 0.32), inset 0 0 10px ${hexToRgba(color, 0.2)}, 0 0 16px ${hexToRgba(color, 0.32)}`,
 })
 
-const fillStyle = computed(() => styleFor(props.item.color))
+const fillStyle = computed(() => styleFor(props.phase === 'failed' ? FAIL_COLOR : props.item.color))
 
 const completeStyle = computed(() => styleFor(SUCCESS_COLOR))
 </script>
@@ -65,6 +65,7 @@ const completeStyle = computed(() => styleFor(SUCCESS_COLOR))
       'track--done': phase === 'done',
       'track--celebrate': phase === 'done' && !item.indeterminate,
       'track--cancelled': phase === 'cancelled',
+      'track--failed': phase === 'failed',
     }"
   >
     <template v-if="item.indeterminate">
@@ -91,6 +92,18 @@ const completeStyle = computed(() => styleFor(SUCCESS_COLOR))
           transformOrigin: segment.origin,
           transform: `scaleX(${scaleFor(segment)})`,
           transitionDuration: transitionFor(),
+        }"
+      ></span>
+    </template>
+    <template v-if="phase === 'failed'">
+      <span
+        v-for="(delay, index) in FAIL_SHARD_DELAYS"
+        :key="index"
+        class="track__shard"
+        :style="{
+          left: `${(index * 100) / FAIL_SHARD_DELAYS.length}%`,
+          width: `${100 / FAIL_SHARD_DELAYS.length + 0.6}%`,
+          animationDelay: `${delay}ms`,
         }"
       ></span>
     </template>
@@ -225,5 +238,55 @@ const completeStyle = computed(() => styleFor(SUCCESS_COLOR))
 .track--cancelled {
   border-color: rgba(244, 110, 122, 0.35);
   filter: saturate(0.35) brightness(0.85);
+}
+
+.track--failed {
+  border-color: rgba(244, 110, 122, 0.45);
+  animation: track-glitch 440ms steps(1) 2;
+}
+
+.track__shard {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(13, 30, 51, 0.97) 0%, rgba(8, 20, 37, 0.98) 100%);
+  opacity: 0;
+  animation: shard-in 60ms steps(1) forwards;
+}
+
+@keyframes shard-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes track-glitch {
+  0% {
+    transform: translate(0, 0);
+  }
+  12% {
+    transform: translate(-2px, 1px);
+  }
+  24% {
+    transform: translate(2px, -1px);
+  }
+  36% {
+    transform: translate(-1px, -1px);
+  }
+  48% {
+    transform: translate(2px, 1px);
+  }
+  60% {
+    transform: translate(-2px, 0);
+  }
+  72% {
+    transform: translate(1px, -1px);
+  }
+  86% {
+    transform: translate(-1px, 1px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
 }
 </style>

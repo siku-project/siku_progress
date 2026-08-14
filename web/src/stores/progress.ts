@@ -3,10 +3,11 @@ import { defineStore } from 'pinia'
 import { normalizeProgress } from '@/utils/progress'
 import type { ProgressInput, ProgressItem } from '@/utils/progress'
 
-export type ProgressPhase = 'running' | 'done' | 'cancelled'
+export type ProgressPhase = 'running' | 'done' | 'cancelled' | 'failed'
 
 const DONE_HOLD = 950
 const CANCEL_HOLD = 500
+const FAIL_HOLD = 1300
 
 export const useProgressStore = defineStore('progress', () => {
   const current = ref<ProgressItem | null>(null)
@@ -36,7 +37,7 @@ export const useProgressStore = defineStore('progress', () => {
       () => {
         current.value = null
       },
-      result === 'done' ? DONE_HOLD : CANCEL_HOLD,
+      result === 'done' ? DONE_HOLD : result === 'failed' ? FAIL_HOLD : CANCEL_HOLD,
     )
   }
 
@@ -68,10 +69,18 @@ export const useProgressStore = defineStore('progress', () => {
     return true
   }
 
+  const fail = (): boolean => {
+    if (!current.value || phase.value !== 'running' || current.value.indeterminate) {
+      return false
+    }
+    finish('failed')
+    return true
+  }
+
   const clear = (): void => {
     clearTimers()
     current.value = null
   }
 
-  return { current, phase, stoppedAt, start, stop, cancel, clear }
+  return { current, phase, stoppedAt, start, stop, cancel, fail, clear }
 })
