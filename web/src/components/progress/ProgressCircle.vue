@@ -14,6 +14,7 @@ const props = defineProps<{
   paused: boolean
   pausedAt: number | null
   value: number
+  stepsDone?: number
 }>()
 
 const item = toRef(props, 'item')

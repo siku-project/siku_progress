@@ -2,6 +2,7 @@
 import { computed, toRef } from 'vue'
 import IcePanel from '@/components/ui/IcePanel.vue'
 import ProgressTrack from './ProgressTrack.vue'
+import ProgressStepTrack from './ProgressStepTrack.vue'
 import { resolveIcon } from '@/utils/icons'
 import { useProgressPercentage } from '@/composables/useProgressPercentage'
 import { useProgressTime } from '@/composables/useProgressTime'
@@ -15,6 +16,7 @@ const props = defineProps<{
   paused: boolean
   pausedAt: number | null
   value: number
+  stepsDone: number
 }>()
 
 const item = toRef(props, 'item')
@@ -27,6 +29,10 @@ const { time } = useProgressTime(item, phase, stoppedAt, paused)
 
 const shownPercent = computed(() =>
   props.item.control ? Math.round(props.value * 100) : percent.value,
+)
+
+const metaText = computed(() =>
+  props.item.steps ? `${props.stepsDone}/${props.item.steps}` : `${shownPercent.value}%`,
 )
 
 const hasMeta = computed(() => props.item.showPercentage || props.item.showTime)
@@ -66,12 +72,14 @@ const wrapper = computed(() => (props.item.background ? IcePanel : 'div'))
             <template v-if="item.label">{{ item.label }}</template>
           </span>
           <span v-if="hasMeta" class="bar__meta">
-            <span v-if="item.showPercentage" class="bar__percent">{{ shownPercent }}%</span>
+            <span v-if="item.showPercentage" class="bar__percent">{{ metaText }}</span>
             <span v-if="item.showTime && time" class="bar__time">{{ time }}</span>
           </span>
         </div>
 
+        <ProgressStepTrack v-if="item.steps" :item="item" :phase="phase" :steps-done="stepsDone" />
         <ProgressTrack
+          v-else
           :item="item"
           :phase="phase"
           :stopped-at="stoppedAt"

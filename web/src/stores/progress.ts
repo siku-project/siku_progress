@@ -17,6 +17,7 @@ export const useProgressStore = defineStore('progress', () => {
   const paused = ref(false)
   const pausedAt = ref<number | null>(null)
   const value = ref(0)
+  const stepsDone = ref(0)
 
   let nextId = 1
   let endTimer: ReturnType<typeof setTimeout> | null = null
@@ -58,11 +59,13 @@ export const useProgressStore = defineStore('progress', () => {
     settlePause()
     phase.value = result
     stoppedAt.value = Date.now()
+    const steps = current.value?.steps
+    const doneHold = steps ? 700 + steps * 150 + 750 : DONE_HOLD
     holdTimer = setTimeout(
       () => {
         current.value = null
       },
-      result === 'done' ? DONE_HOLD : result === 'failed' ? FAIL_HOLD : CANCEL_HOLD,
+      result === 'done' ? doneHold : result === 'failed' ? FAIL_HOLD : CANCEL_HOLD,
     )
   }
 
@@ -107,14 +110,47 @@ export const useProgressStore = defineStore('progress', () => {
     held = false
     everRose = false
     value.value = item.control ? item.control.startAt : 0
+    stepsDone.value = 0
     if (item.control) {
       if (item.control.mode !== 'direct') {
         controlTimer = setInterval(tickControl, CONTROL_TICK)
       }
-    } else if (!item.indeterminate) {
+    } else if (!item.indeterminate && !item.steps) {
       endTimer = setTimeout(() => finish('done'), item.duration)
     }
     return item
+  }
+
+  const applySteps = (next: number): void => {
+    const item = current.value
+    if (!item?.steps) {
+      return
+    }
+    stepsDone.value = Math.min(item.steps, Math.max(0, Math.round(next)))
+    if (stepsDone.value >= item.steps) {
+      finish('done')
+    }
+  }
+
+  const completeStep = (): boolean => {
+    const item = current.value
+    if (!item?.steps || phase.value !== 'running' || paused.value) {
+      return false
+    }
+    applySteps(stepsDone.value + 1)
+    return true
+  }
+
+  const setSteps = (next: number): boolean => {
+    const item = current.value
+    if (!item?.steps || phase.value !== 'running' || paused.value) {
+      return false
+    }
+    if (typeof next !== 'number' || !Number.isFinite(next)) {
+      return false
+    }
+    applySteps(next)
+    return true
   }
 
   const setValue = (next: number): boolean => {
@@ -227,10 +263,13 @@ export const useProgressStore = defineStore('progress', () => {
     paused,
     pausedAt,
     value,
+    stepsDone,
     start,
     setValue,
     setHeld,
     pulse,
+    completeStep,
+    setSteps,
     pause,
     resume,
     stop,

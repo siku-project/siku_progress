@@ -68,6 +68,7 @@ export interface ProgressControl {
 export const CONTROL_DEFAULT_RISE = 0.35
 export const CONTROL_DEFAULT_FALL = 0.25
 export const CONTROL_DEFAULT_PULSE_GAIN = 0.08
+export const STEPS_MAX = 10
 
 export const LABEL_ADVISED_MAX = 40
 export const MIN_DURATION = 100
@@ -101,6 +102,7 @@ export interface ProgressInput {
   indeterminate?: boolean
   position?: ProgressPosition
   control?: ProgressControlInput
+  steps?: number
 }
 
 export interface ProgressItem {
@@ -120,6 +122,7 @@ export interface ProgressItem {
   indeterminate: boolean
   position: ProgressPosition
   control?: ProgressControl
+  steps?: number
   startedAt: number
 }
 
@@ -216,6 +219,14 @@ export const normalizeProgress = (input: ProgressInput, id: number): ProgressIte
         ? LOADING_DEFAULT_CYCLE
         : DEFAULT_DURATION
   const control = resolveControl(input.control, indeterminate)
+  const steps =
+    shape === 'bar' &&
+    !indeterminate &&
+    !control &&
+    typeof input.steps === 'number' &&
+    Number.isFinite(input.steps)
+      ? Math.min(STEPS_MAX, Math.max(1, Math.round(input.steps)))
+      : undefined
   const showPercentage =
     input.showPercentage === true &&
     !indeterminate &&
@@ -239,6 +250,7 @@ export const normalizeProgress = (input: ProgressInput, id: number): ProgressIte
     showTime:
       input.showTime === true &&
       !control &&
+      !steps &&
       !(shape === 'circle' && size < CIRCLE_CENTER_MIN_SIZE) &&
       !(shape === 'circle' && showPercentage),
     background: shape === 'circle' ? false : input.background !== false,
@@ -246,6 +258,7 @@ export const normalizeProgress = (input: ProgressInput, id: number): ProgressIte
     indeterminate,
     position: resolvePosition(indeterminate, input.position),
     control,
+    steps,
     startedAt: Date.now(),
   }
 }

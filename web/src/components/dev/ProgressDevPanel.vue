@@ -27,7 +27,8 @@ import type {
 
 const store = useProgressStore()
 
-const kind = ref<'timed' | 'loading' | 'controlled'>('timed')
+const kind = ref<'timed' | 'loading' | 'controlled' | 'steps'>('timed')
+const stepCount = ref(4)
 const controlMode = ref<ControlMode>('hold')
 const riseRate = ref(0.35)
 const fallRate = ref(0.25)
@@ -52,6 +53,7 @@ const KIND_OPTIONS = [
   { value: 'timed', label: 'Progression' },
   { value: 'loading', label: 'Chargement' },
   { value: 'controlled', label: 'Piloté' },
+  { value: 'steps', label: 'Étapes' },
 ]
 
 const CONTROL_MODE_OPTIONS = [
@@ -112,6 +114,11 @@ const COLOR_PRESETS = ['#a1cbe8', '#ecf6ff', '#34d3a6', '#f0be60', '#f46e7a']
 const isCircle = computed(() => shape.value === 'circle')
 const isLoading = computed(() => kind.value === 'loading')
 const isControlled = computed(() => kind.value === 'controlled')
+const isSteps = computed(() => kind.value === 'steps')
+
+const percentLabel = computed(() =>
+  isSteps.value ? 'Afficher le compteur' : 'Afficher le pourcentage',
+)
 
 const LOADING_CIRCLE_DIRECTIONS = [
   { value: 'clockwise', label: 'Horaire' },
@@ -148,6 +155,12 @@ const positionOptions = computed(() =>
 
 watch([shape, kind], ([shapeValue]) => {
   direction.value = shapeValue === 'circle' ? 'clockwise' : 'left-right'
+})
+
+watch(kind, (valueKind) => {
+  if (valueKind === 'steps') {
+    shape.value = 'bar'
+  }
 })
 
 watch(kind, (value) => {
@@ -189,6 +202,7 @@ const start = (): void => {
           failAtEmpty: failAtEmpty.value,
         }
       : undefined,
+    steps: isSteps.value ? stepCount.value : undefined,
     shape: shape.value,
     label: label.value,
     icon: icon.value || undefined,
@@ -241,6 +255,14 @@ const sendPulse = (): void => {
 
 const sendDirect = (): void => {
   store.setValue(directValue.value / 100)
+}
+
+const validateStep = (): void => {
+  store.completeStep()
+}
+
+const resetSteps = (): void => {
+  store.setSteps(0)
 }
 
 const presetSearch = (): void => {
@@ -356,16 +378,20 @@ const presetMinimal = (): void => {
           <DevToggleGroup v-model="kind" :options="KIND_OPTIONS" />
         </DevField>
 
-        <DevField label="Forme">
+        <DevField v-if="!isSteps" label="Forme">
           <DevToggleGroup v-model="shape" :options="SHAPE_OPTIONS" />
         </DevField>
 
-        <DevField label="Direction">
+        <DevField v-if="!isSteps" label="Direction">
           <DevToggleGroup v-model="direction" :options="directionOptions" :columns="2" />
         </DevField>
 
-        <DevField v-if="!isLoading" label="Mode">
+        <DevField v-if="!isLoading && !isSteps" label="Mode">
           <DevToggleGroup v-model="mode" :options="MODE_OPTIONS" />
+        </DevField>
+
+        <DevField v-if="isSteps" label="Étapes (1–10)">
+          <input v-model.number="stepCount" type="number" min="1" max="10" step="1" />
         </DevField>
 
         <DevField label="Texte" :hint="labelHint" :hint-tone="labelHintTone">
@@ -395,7 +421,7 @@ const presetMinimal = (): void => {
         </DevField>
 
         <div class="panel__row">
-          <DevField v-if="!isControlled" :label="durationLabel">
+          <DevField v-if="!isControlled && !isSteps" :label="durationLabel">
             <input v-model.number="duration" type="number" min="100" step="500" />
           </DevField>
 
@@ -431,12 +457,12 @@ const presetMinimal = (): void => {
         <DevCheck
           v-if="!isLoading"
           v-model="showPercentage"
-          label="Afficher le pourcentage"
+          :label="percentLabel"
           :disabled="centerUnavailable"
         />
 
         <DevCheck
-          v-if="!isControlled"
+          v-if="!isControlled && !isSteps"
           v-model="showTime"
           :label="timeLabel"
           :disabled="centerUnavailable"
@@ -474,6 +500,11 @@ const presetMinimal = (): void => {
             step="1"
             @input="sendDirect"
           />
+        </div>
+
+        <div v-if="isSteps" class="panel__actions">
+          <DevButton variant="primary" @click="validateStep">Valider étape</DevButton>
+          <DevButton @click="resetSteps">Réinitialiser</DevButton>
         </div>
 
         <div v-if="!isLoading" class="panel__row panel__row--end">
