@@ -7,7 +7,7 @@ export interface DevToggleOption {
 defineProps<{
   options: DevToggleOption[]
   modelValue: string
-  columns?: 2 | 4
+  columns?: 2 | 3 | 4
 }>()
 
 const emit = defineEmits<{
@@ -20,7 +20,7 @@ const select = (value: string): void => {
 </script>
 
 <template>
-  <div class="toggle" :class="{ 'toggle--grid': columns === 2 }">
+  <div class="toggle" :class="{ 'toggle--grid': columns === 2, 'toggle--grid-3': columns === 3 }">
     <button
       v-for="option in options"
       :key="option.value"
@@ -43,6 +43,11 @@ const select = (value: string): void => {
 .toggle--grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
+}
+
+.toggle--grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
 }
 
 .toggle__btn {

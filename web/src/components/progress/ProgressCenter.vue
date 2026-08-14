@@ -9,10 +9,12 @@ const store = useProgressStore()
 const { current, phase, stoppedAt } = storeToRefs(store)
 
 const widget = computed(() => (current.value?.shape === 'circle' ? ProgressCircle : ProgressBar))
+
+const stageClass = computed(() => `stage--${current.value?.position ?? 'bottom-center'}`)
 </script>
 
 <template>
-  <div class="stage">
+  <div class="stage" :class="stageClass">
     <Transition name="progress-pop">
       <component
         :is="widget"
@@ -29,13 +31,60 @@ const widget = computed(() => (current.value?.shape === 'circle' ? ProgressCircl
 <style scoped>
 .stage {
   position: fixed;
-  bottom: 9vh;
-  left: 50%;
   z-index: 40;
-  transform: translateX(-50%);
   pointer-events: none;
   display: flex;
   justify-content: center;
+}
+
+.stage--top-left {
+  top: 8vh;
+  left: 4vw;
+}
+
+.stage--top-center {
+  top: 8vh;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.stage--top-right {
+  top: 8vh;
+  right: 4vw;
+}
+
+.stage--center-left {
+  top: 50%;
+  left: 4vw;
+  transform: translateY(-50%);
+}
+
+.stage--center {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.stage--center-right {
+  top: 50%;
+  right: 4vw;
+  transform: translateY(-50%);
+}
+
+.stage--bottom-left {
+  bottom: 9vh;
+  left: 4vw;
+}
+
+.stage--bottom-center {
+  bottom: 9vh;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.stage--bottom-right {
+  bottom: 9vh;
+  right: 4vw;
 }
 
 .progress-pop-enter-active {

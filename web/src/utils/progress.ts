@@ -25,6 +25,22 @@ export const LABEL_POSITIONS = ['top', 'bottom'] as const
 
 export type LabelPosition = (typeof LABEL_POSITIONS)[number]
 
+export const LOADING_POSITIONS = [
+  'top-left',
+  'top-center',
+  'top-right',
+  'center-left',
+  'center',
+  'center-right',
+  'bottom-left',
+  'bottom-center',
+  'bottom-right',
+] as const
+
+export type ProgressPosition = (typeof LOADING_POSITIONS)[number]
+
+export const TIMED_POSITIONS = ['top-center', 'center', 'bottom-center'] as const
+
 export const LABEL_ADVISED_MAX = 40
 export const MIN_DURATION = 100
 export const DEFAULT_DURATION = 5000
@@ -55,6 +71,7 @@ export interface ProgressInput {
   background?: boolean
   size?: number
   indeterminate?: boolean
+  position?: ProgressPosition
 }
 
 export interface ProgressItem {
@@ -72,6 +89,7 @@ export interface ProgressItem {
   background: boolean
   size: number
   indeterminate: boolean
+  position: ProgressPosition
   startedAt: number
 }
 
@@ -112,6 +130,13 @@ const resolveDirection = (
   return BAR_DIRECTIONS.includes(direction as BarDirection)
     ? (direction as BarDirection)
     : 'left-right'
+}
+
+const resolvePosition = (indeterminate: boolean, position?: ProgressPosition): ProgressPosition => {
+  const allowed: readonly ProgressPosition[] = indeterminate ? LOADING_POSITIONS : TIMED_POSITIONS
+  return allowed.includes(position as ProgressPosition)
+    ? (position as ProgressPosition)
+    : 'bottom-center'
 }
 
 export const normalizeProgress = (input: ProgressInput, id: number): ProgressItem => {
@@ -157,6 +182,7 @@ export const normalizeProgress = (input: ProgressInput, id: number): ProgressIte
     background: shape === 'circle' ? false : input.background !== false,
     size,
     indeterminate,
+    position: resolvePosition(indeterminate, input.position),
     startedAt: Date.now(),
   }
 }

@@ -20,6 +20,7 @@ import type {
   LabelPosition,
   ProgressDirection,
   ProgressMode,
+  ProgressPosition,
   ProgressShape,
 } from '@/utils/progress'
 
@@ -36,6 +37,7 @@ const duration = ref(5000)
 const color = ref(DEFAULT_COLOR)
 const showPercentage = ref(true)
 const showTime = ref(false)
+const position = ref<ProgressPosition>('bottom-center')
 const background = ref(true)
 const circleSize = ref(CIRCLE_DEFAULT_SIZE)
 
@@ -73,6 +75,24 @@ const LABEL_POSITION_OPTIONS = [
   { value: 'bottom', label: 'En dessous' },
 ]
 
+const TIMED_POSITION_OPTIONS = [
+  { value: 'top-center', label: 'Haut' },
+  { value: 'center', label: 'Centre' },
+  { value: 'bottom-center', label: 'Bas' },
+]
+
+const LOADING_POSITION_OPTIONS = [
+  { value: 'top-left', label: 'Haut G' },
+  { value: 'top-center', label: 'Haut' },
+  { value: 'top-right', label: 'Haut D' },
+  { value: 'center-left', label: 'Gauche' },
+  { value: 'center', label: 'Centre' },
+  { value: 'center-right', label: 'Droite' },
+  { value: 'bottom-left', label: 'Bas G' },
+  { value: 'bottom-center', label: 'Bas' },
+  { value: 'bottom-right', label: 'Bas D' },
+]
+
 const COLOR_PRESETS = ['#a1cbe8', '#ecf6ff', '#34d3a6', '#f0be60', '#f46e7a']
 
 const isCircle = computed(() => shape.value === 'circle')
@@ -107,8 +127,21 @@ const directionOptions = computed(() => {
 
 const durationLabel = computed(() => (isLoading.value ? 'Cycle (ms)' : 'Durée (ms)'))
 
+const positionOptions = computed(() =>
+  isLoading.value ? LOADING_POSITION_OPTIONS : TIMED_POSITION_OPTIONS,
+)
+
 watch([shape, kind], ([shapeValue]) => {
   direction.value = shapeValue === 'circle' ? 'clockwise' : 'left-right'
+})
+
+watch(kind, (value) => {
+  if (
+    value === 'timed' &&
+    !TIMED_POSITION_OPTIONS.some((option) => option.value === position.value)
+  ) {
+    position.value = 'bottom-center'
+  }
 })
 
 watch(showTime, (value) => {
@@ -143,6 +176,7 @@ const start = (): void => {
     showTime: showTime.value,
     background: background.value,
     size: circleSize.value,
+    position: position.value,
   })
 }
 
@@ -289,6 +323,10 @@ const presetMinimal = (): void => {
 
         <DevField label="Icône (mdi)">
           <input v-model="icon" type="text" placeholder="mdi-magnify" spellcheck="false" />
+        </DevField>
+
+        <DevField label="Position">
+          <DevToggleGroup v-model="position" :options="positionOptions" :columns="3" />
         </DevField>
 
         <DevField v-if="isCircle" label="Position du texte">
