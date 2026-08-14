@@ -49,8 +49,8 @@ const transitionFor = (): string => {
 }
 
 const fillStyle = computed(() => ({
-  background: `linear-gradient(180deg, ${hexToRgba(props.item.color, 0.92)} 0%, ${props.item.color} 100%)`,
-  boxShadow: `0 0 12px ${hexToRgba(props.item.color, 0.5)}, 0 0 4px ${hexToRgba(props.item.color, 0.35)}, inset 0 1px 0 rgba(255, 255, 255, 0.28)`,
+  background: `linear-gradient(180deg, ${hexToRgba(props.item.color, 0.5)} 0%, ${hexToRgba(props.item.color, 0.24)} 100%)`,
+  boxShadow: `inset 0 1px 0 ${hexToRgba(props.item.color, 0.45)}, inset 0 0 12px ${hexToRgba(props.item.color, 0.16)}, 0 0 16px ${hexToRgba(props.item.color, 0.22)}`,
 }))
 </script>
 
@@ -71,19 +71,23 @@ const fillStyle = computed(() => ({
         transitionDuration: transitionFor(),
       }"
     ></span>
+    <span class="track__sheen" aria-hidden="true"></span>
   </div>
 </template>
 
 <style scoped>
 .track {
   position: relative;
-  height: 10px;
+  height: 12px;
   overflow: hidden;
   border-radius: 9999px;
-  border: 1px solid rgba(212, 231, 247, 0.14);
-  background: rgba(9, 24, 43, 0.72);
+  border: 1px solid rgba(212, 231, 247, 0.16);
+  background:
+    radial-gradient(120% 90% at 50% -20%, rgba(203, 227, 246, 0.08) 0%, transparent 60%),
+    linear-gradient(180deg, rgba(14, 32, 54, 0.6) 0%, rgba(8, 20, 37, 0.68) 100%);
   box-shadow:
-    inset 0 1px 3px rgba(4, 12, 24, 0.6),
+    inset 0 1px 3px rgba(4, 12, 24, 0.55),
+    inset 0 -1px 0 rgba(233, 244, 253, 0.05),
     0 1px 0 rgba(233, 244, 253, 0.05);
   transition:
     border-color 0.3s ease,
@@ -119,9 +123,23 @@ const fillStyle = computed(() => ({
   border-bottom-left-radius: 0;
 }
 
+.track__sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    117deg,
+    transparent 30%,
+    rgba(233, 244, 253, 0.07) 45%,
+    rgba(233, 244, 253, 0.02) 51%,
+    transparent 63%
+  );
+}
+
 .track--done {
-  border-color: rgba(212, 231, 247, 0.3);
-  filter: brightness(1.18);
+  border-color: rgba(212, 231, 247, 0.32);
+  filter: brightness(1.22);
 }
 
 .track--cancelled {

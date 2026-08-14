@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue'
+import IcePanel from '@/components/ui/IcePanel.vue'
 import ProgressTrack from './ProgressTrack.vue'
 import { useProgressPercentage } from '@/composables/useProgressPercentage'
 import type { ProgressItem } from '@/utils/progress'
@@ -22,22 +23,23 @@ const hasHeader = computed(() => Boolean(props.item.label) || props.item.showPer
 
 <template>
   <div class="bar" :class="{ 'bar--cancelled': phase === 'cancelled' }">
-    <div v-if="hasHeader" class="bar__header">
-      <span v-if="item.label" class="bar__label">{{ item.label }}</span>
-      <span v-if="item.showPercentage" class="bar__percent">{{ percent }}%</span>
-    </div>
+    <IcePanel variant="secondary" class="bar__panel">
+      <div class="bar__inner" :class="{ 'bar__inner--bare': !hasHeader }">
+        <div v-if="hasHeader" class="bar__header">
+          <span v-if="item.label" class="bar__label">{{ item.label }}</span>
+          <span v-if="item.showPercentage" class="bar__percent">{{ percent }}%</span>
+        </div>
 
-    <ProgressTrack :item="item" :phase="phase" :stopped-at="stoppedAt" />
+        <ProgressTrack :item="item" :phase="phase" :stopped-at="stoppedAt" />
+      </div>
+    </IcePanel>
   </div>
 </template>
 
 <style scoped>
 .bar {
-  width: 340px;
+  width: 360px;
   max-width: 82vw;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   transition: filter 0.3s ease;
 }
 
@@ -45,30 +47,46 @@ const hasHeader = computed(() => Boolean(props.item.label) || props.item.showPer
   filter: saturate(0.5);
 }
 
+.bar__panel {
+  border-radius: 1rem;
+}
+
+.bar__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px 16px 14px;
+}
+
+.bar__inner--bare {
+  padding: 12px 16px;
+}
+
 .bar__header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 14px;
-  min-height: 17px;
+  min-height: 18px;
 }
 
 .bar__label {
-  font-size: 12.5px;
-  font-weight: 300;
-  letter-spacing: 0.14em;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: rgba(242, 248, 253, 0.88);
-  text-shadow: 0 1px 8px rgba(5, 14, 30, 0.8);
+  color: rgba(244, 250, 255, 0.97);
+  text-shadow: 0 1px 6px rgba(5, 14, 30, 0.55);
+  overflow-wrap: anywhere;
 }
 
 .bar__percent {
   margin-left: auto;
-  font-size: 11px;
-  font-weight: 300;
+  font-size: 12px;
+  font-weight: 400;
   letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
-  color: rgba(198, 224, 243, 0.62);
-  text-shadow: 0 1px 8px rgba(5, 14, 30, 0.8);
+  color: rgba(226, 240, 250, 0.92);
+  text-shadow: 0 1px 6px rgba(5, 14, 30, 0.55);
 }
 </style>
