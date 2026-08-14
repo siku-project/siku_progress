@@ -14,6 +14,7 @@ export const useProgressTime = (
   item: Ref<ProgressItem>,
   phase: Ref<ProgressPhase>,
   stoppedAt: Ref<number | null>,
+  paused?: Ref<boolean>,
 ) => {
   const time = ref<string | null>(null)
 
@@ -39,6 +40,9 @@ export const useProgressTime = (
   }
 
   const tick = (): void => {
+    if (paused?.value) {
+      return
+    }
     if (item.value.indeterminate) {
       applyLoading(Date.now())
     } else {

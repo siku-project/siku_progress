@@ -13,10 +13,13 @@ export const useProgressStore = defineStore('progress', () => {
   const current = ref<ProgressItem | null>(null)
   const phase = ref<ProgressPhase>('running')
   const stoppedAt = ref<number | null>(null)
+  const paused = ref(false)
+  const pausedAt = ref<number | null>(null)
 
   let nextId = 1
   let endTimer: ReturnType<typeof setTimeout> | null = null
   let holdTimer: ReturnType<typeof setTimeout> | null = null
+  let resumeTimer: ReturnType<typeof setTimeout> | null = null
 
   const clearTimers = (): void => {
     if (endTimer) {
@@ -27,10 +30,23 @@ export const useProgressStore = defineStore('progress', () => {
       clearTimeout(holdTimer)
       holdTimer = null
     }
+    if (resumeTimer) {
+      clearTimeout(resumeTimer)
+      resumeTimer = null
+    }
+  }
+
+  const settlePause = (): void => {
+    if (paused.value && pausedAt.value && current.value) {
+      current.value.startedAt += Date.now() - pausedAt.value
+    }
+    paused.value = false
+    pausedAt.value = null
   }
 
   const finish = (result: Exclude<ProgressPhase, 'running'>): void => {
     clearTimers()
+    settlePause()
     phase.value = result
     stoppedAt.value = Date.now()
     holdTimer = setTimeout(
@@ -47,10 +63,47 @@ export const useProgressStore = defineStore('progress', () => {
     current.value = item
     phase.value = 'running'
     stoppedAt.value = null
+    paused.value = false
+    pausedAt.value = null
     if (!item.indeterminate) {
       endTimer = setTimeout(() => finish('done'), item.duration)
     }
     return item
+  }
+
+  const pause = (autoResumeMs?: number): boolean => {
+    if (
+      !current.value ||
+      phase.value !== 'running' ||
+      current.value.indeterminate ||
+      paused.value
+    ) {
+      return false
+    }
+    if (endTimer) {
+      clearTimeout(endTimer)
+      endTimer = null
+    }
+    paused.value = true
+    pausedAt.value = Date.now()
+    if (typeof autoResumeMs === 'number' && Number.isFinite(autoResumeMs) && autoResumeMs > 0) {
+      resumeTimer = setTimeout(() => resume(), autoResumeMs)
+    }
+    return true
+  }
+
+  const resume = (): boolean => {
+    if (!current.value || phase.value !== 'running' || !paused.value) {
+      return false
+    }
+    if (resumeTimer) {
+      clearTimeout(resumeTimer)
+      resumeTimer = null
+    }
+    settlePause()
+    const remaining = current.value.startedAt + current.value.duration - Date.now()
+    endTimer = setTimeout(() => finish('done'), Math.max(remaining, 0))
+    return true
   }
 
   const stop = (): boolean => {
@@ -82,5 +135,18 @@ export const useProgressStore = defineStore('progress', () => {
     current.value = null
   }
 
-  return { current, phase, stoppedAt, start, stop, cancel, fail, clear }
+  return {
+    current,
+    phase,
+    stoppedAt,
+    paused,
+    pausedAt,
+    start,
+    pause,
+    resume,
+    stop,
+    cancel,
+    fail,
+    clear,
+  }
 })

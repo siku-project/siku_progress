@@ -11,14 +11,17 @@ const props = defineProps<{
   item: ProgressItem
   phase: ProgressPhase
   stoppedAt: number | null
+  paused: boolean
+  pausedAt: number | null
 }>()
 
 const item = toRef(props, 'item')
 const phase = toRef(props, 'phase')
 const stoppedAt = toRef(props, 'stoppedAt')
+const paused = toRef(props, 'paused')
 
-const { percent } = useProgressPercentage(item, phase, stoppedAt)
-const { time } = useProgressTime(item, phase, stoppedAt)
+const { percent } = useProgressPercentage(item, phase, stoppedAt, paused)
+const { time } = useProgressTime(item, phase, stoppedAt, paused)
 
 const percentFontSize = computed(
   () => `${Math.min(21, Math.max(13, Math.round(props.item.size * 0.14)))}px`,
@@ -34,7 +37,11 @@ const hasLabel = computed(() => Boolean(props.item.label) || Boolean(props.item.
 <template>
   <div
     class="circle"
-    :class="{ 'circle--cancelled': phase === 'cancelled', 'circle--failed': phase === 'failed' }"
+    :class="{
+      'circle--cancelled': phase === 'cancelled',
+      'circle--failed': phase === 'failed',
+      'circle--paused': paused,
+    }"
   >
     <span v-if="hasLabel && item.labelPosition === 'top'" class="circle__label">
       <v-icon
@@ -46,7 +53,13 @@ const hasLabel = computed(() => Boolean(props.item.label) || Boolean(props.item.
       <template v-if="item.label">{{ item.label }}</template>
     </span>
 
-    <ProgressRing :item="item" :phase="phase" :stopped-at="stoppedAt">
+    <ProgressRing
+      :item="item"
+      :phase="phase"
+      :stopped-at="stoppedAt"
+      :paused="paused"
+      :paused-at="pausedAt"
+    >
       <span
         v-if="item.showPercentage"
         class="circle__percent"
@@ -87,6 +100,10 @@ const hasLabel = computed(() => Boolean(props.item.label) || Boolean(props.item.
 
 .circle--cancelled {
   filter: saturate(0.5);
+}
+
+.circle--paused {
+  filter: saturate(0.7) brightness(0.92);
 }
 
 .circle--failed .circle__label,

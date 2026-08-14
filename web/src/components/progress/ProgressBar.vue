@@ -12,14 +12,17 @@ const props = defineProps<{
   item: ProgressItem
   phase: ProgressPhase
   stoppedAt: number | null
+  paused: boolean
+  pausedAt: number | null
 }>()
 
 const item = toRef(props, 'item')
 const phase = toRef(props, 'phase')
 const stoppedAt = toRef(props, 'stoppedAt')
+const paused = toRef(props, 'paused')
 
-const { percent } = useProgressPercentage(item, phase, stoppedAt)
-const { time } = useProgressTime(item, phase, stoppedAt)
+const { percent } = useProgressPercentage(item, phase, stoppedAt, paused)
+const { time } = useProgressTime(item, phase, stoppedAt, paused)
 
 const hasMeta = computed(() => props.item.showPercentage || props.item.showTime)
 
@@ -39,6 +42,7 @@ const wrapper = computed(() => (props.item.background ? IcePanel : 'div'))
       'bar--cancelled': phase === 'cancelled',
       'bar--celebrate': celebrate,
       'bar--failed': phase === 'failed',
+      'bar--paused': paused,
     }"
   >
     <component :is="wrapper" class="bar__panel">
@@ -62,7 +66,13 @@ const wrapper = computed(() => (props.item.background ? IcePanel : 'div'))
           </span>
         </div>
 
-        <ProgressTrack :item="item" :phase="phase" :stopped-at="stoppedAt" />
+        <ProgressTrack
+          :item="item"
+          :phase="phase"
+          :stopped-at="stoppedAt"
+          :paused="paused"
+          :paused-at="pausedAt"
+        />
       </div>
     </component>
   </div>
@@ -77,6 +87,10 @@ const wrapper = computed(() => (props.item.background ? IcePanel : 'div'))
 
 .bar--cancelled {
   filter: saturate(0.5);
+}
+
+.bar--paused {
+  filter: saturate(0.7) brightness(0.92);
 }
 
 .bar--failed .bar__label,

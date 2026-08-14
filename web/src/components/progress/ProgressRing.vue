@@ -9,6 +9,8 @@ const props = defineProps<{
   item: ProgressItem
   phase: ProgressPhase
   stoppedAt: number | null
+  paused?: boolean
+  pausedAt?: number | null
 }>()
 
 const GLOW = 4
@@ -51,12 +53,23 @@ const effectiveColor = computed(() => {
   return props.item.color
 })
 
+const frozenRatio = computed<number | null>(() => {
+  if (!props.paused || !props.pausedAt) {
+    return null
+  }
+  const ratio = (props.pausedAt - props.item.startedAt) / props.item.duration
+  return Math.min(1, Math.max(0, ratio))
+})
+
 const arcRatio = computed<number>(() => {
   if (props.item.indeterminate) {
     return props.phase === 'done' ? 1 : 0.27
   }
   if (stoppedRatio.value !== null) {
     return sweep.value.from + (sweep.value.to - sweep.value.from) * stoppedRatio.value
+  }
+  if (frozenRatio.value !== null) {
+    return sweep.value.from + (sweep.value.to - sweep.value.from) * frozenRatio.value
   }
   return running.value ? sweep.value.to : sweep.value.from
 })
@@ -85,11 +98,13 @@ const transition = computed(() => {
     props.item.indeterminate ||
     props.phase === 'cancelled' ||
     props.phase === 'failed' ||
+    props.paused ||
     !running.value
   ) {
     return 'none'
   }
-  return `stroke-dasharray ${props.item.duration}ms linear, stroke-dashoffset ${props.item.duration}ms linear`
+  const remaining = Math.max(props.item.startedAt + props.item.duration - Date.now(), 0)
+  return `stroke-dasharray ${remaining}ms linear, stroke-dashoffset ${remaining}ms linear`
 })
 
 const groupTransform = computed(() => {

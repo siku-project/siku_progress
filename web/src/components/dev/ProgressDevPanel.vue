@@ -192,6 +192,16 @@ const fail = (): void => {
   store.fail()
 }
 
+const autoResume = ref(0)
+
+const pause = (): void => {
+  store.pause(autoResume.value > 0 ? autoResume.value : undefined)
+}
+
+const resume = (): void => {
+  store.resume()
+}
+
 const presetSearch = (): void => {
   store.start({
     label: 'Fouille en cours…',
@@ -373,6 +383,14 @@ const presetMinimal = (): void => {
           <DevButton @click="cancel">Annuler</DevButton>
         </div>
 
+        <div v-if="!isLoading" class="panel__row panel__row--end">
+          <DevField label="Reprise auto (ms)" hint="0 = manuelle">
+            <input v-model.number="autoResume" type="number" min="0" step="500" />
+          </DevField>
+          <DevButton @click="pause">Pause</DevButton>
+          <DevButton @click="resume">Reprendre</DevButton>
+        </div>
+
         <div class="ice-divider panel__divider"></div>
 
         <div class="panel__presets">
@@ -422,6 +440,10 @@ const presetMinimal = (): void => {
 .panel__row {
   display: flex;
   gap: 12px;
+}
+
+.panel__row--end {
+  align-items: flex-end;
 }
 
 .panel__actions {

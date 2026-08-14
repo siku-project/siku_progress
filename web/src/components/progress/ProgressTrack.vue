@@ -10,6 +10,8 @@ const props = defineProps<{
   item: ProgressItem
   phase: ProgressPhase
   stoppedAt: number | null
+  paused?: boolean
+  pausedAt?: number | null
 }>()
 
 const running = ref(false)
@@ -34,18 +36,32 @@ const stoppedRatio = computed<number | null>(() => {
   return Math.min(1, Math.max(0, ratio))
 })
 
+const frozenRatio = computed<number | null>(() => {
+  if (!props.paused || !props.pausedAt) {
+    return null
+  }
+  const ratio = (props.pausedAt - props.item.startedAt) / props.item.duration
+  return Math.min(1, Math.max(0, ratio))
+})
+
 const scaleFor = (segment: ProgressSegment): number => {
   if (stoppedRatio.value !== null) {
     return segment.from + (segment.to - segment.from) * stoppedRatio.value
+  }
+  if (frozenRatio.value !== null) {
+    return segment.from + (segment.to - segment.from) * frozenRatio.value
   }
   return running.value ? segment.to : segment.from
 }
 
 const transitionFor = (): string => {
-  if (props.phase === 'cancelled' || props.phase === 'failed') {
+  if (props.phase === 'cancelled' || props.phase === 'failed' || props.paused) {
     return '0ms'
   }
-  return running.value ? `${props.item.duration}ms` : '0ms'
+  if (!running.value) {
+    return '0ms'
+  }
+  return `${Math.max(props.item.startedAt + props.item.duration - Date.now(), 0)}ms`
 }
 
 const styleFor = (color: string) => ({

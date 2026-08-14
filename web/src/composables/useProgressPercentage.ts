@@ -11,6 +11,7 @@ export const useProgressPercentage = (
   item: Ref<ProgressItem>,
   phase: Ref<ProgressPhase>,
   stoppedAt: Ref<number | null>,
+  paused?: Ref<boolean>,
 ) => {
   const percent = ref(0)
 
@@ -33,6 +34,9 @@ export const useProgressPercentage = (
     stop()
     apply(0)
     interval = setInterval(() => {
+      if (paused?.value) {
+        return
+      }
       const ratio = ratioNow()
       apply(ratio)
       if (ratio >= 1) {
