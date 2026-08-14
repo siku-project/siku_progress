@@ -29,8 +29,8 @@ export const LABEL_ADVISED_MAX = 40
 export const MIN_DURATION = 100
 export const DEFAULT_DURATION = 5000
 export const DEFAULT_COLOR = '#a1cbe8'
-export const CIRCLE_MIN_SIZE = 56
-export const CIRCLE_MAX_SIZE = 220
+export const CIRCLE_MIN_SIZE = 64
+export const CIRCLE_MAX_SIZE = 156
 export const CIRCLE_DEFAULT_SIZE = 120
 export const CIRCLE_PERCENT_MIN_SIZE = 96
 
