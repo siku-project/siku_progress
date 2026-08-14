@@ -83,6 +83,15 @@ export const CIRCLE_DEFAULT_SIZE = 120
 export const CIRCLE_CENTER_MIN_SIZE = 96
 export const LOADING_DEFAULT_CYCLE = 1400
 
+export const PROGRESS_BASE_DEFAULTS: ProgressDefaults = {
+  color: DEFAULT_COLOR,
+  duration: DEFAULT_DURATION,
+  position: 'bottom-center',
+  loadingPosition: 'bottom-center',
+  circleSize: CIRCLE_DEFAULT_SIZE,
+  loadingCycle: LOADING_DEFAULT_CYCLE,
+}
+
 const HEX_PATTERN = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
 const ICON_PATTERN = /^mdi-[a-z0-9-]+$/i
 
@@ -103,6 +112,15 @@ export interface ProgressInput {
   position?: ProgressPosition
   control?: ProgressControlInput
   steps?: number
+}
+
+export interface ProgressDefaults {
+  color: string
+  duration: number
+  position: ProgressPosition
+  loadingPosition: ProgressPosition
+  circleSize: number
+  loadingCycle: number
 }
 
 export interface ProgressItem {
@@ -195,29 +213,35 @@ const resolveControl = (
   }
 }
 
-const resolvePosition = (indeterminate: boolean, position?: ProgressPosition): ProgressPosition => {
+const resolvePosition = (
+  indeterminate: boolean,
+  position: ProgressPosition | undefined,
+  fallback: ProgressPosition,
+): ProgressPosition => {
   const allowed: readonly ProgressPosition[] = indeterminate ? LOADING_POSITIONS : TIMED_POSITIONS
-  return allowed.includes(position as ProgressPosition)
-    ? (position as ProgressPosition)
-    : 'bottom-center'
+  return allowed.includes(position as ProgressPosition) ? (position as ProgressPosition) : fallback
 }
 
-export const normalizeProgress = (input: ProgressInput, id: number): ProgressItem => {
+export const normalizeProgress = (
+  input: ProgressInput,
+  id: number,
+  defaults: ProgressDefaults = PROGRESS_BASE_DEFAULTS,
+): ProgressItem => {
   const shape = PROGRESS_SHAPES.includes(input.shape as ProgressShape)
     ? (input.shape as ProgressShape)
     : 'bar'
   const size =
     typeof input.size === 'number' && Number.isFinite(input.size)
       ? Math.min(CIRCLE_MAX_SIZE, Math.max(CIRCLE_MIN_SIZE, Math.round(input.size)))
-      : CIRCLE_DEFAULT_SIZE
+      : defaults.circleSize
   const label = typeof input.label === 'string' ? input.label.trim() : ''
   const indeterminate = input.indeterminate === true
   const duration =
     typeof input.duration === 'number' && Number.isFinite(input.duration)
       ? Math.max(MIN_DURATION, Math.floor(input.duration))
       : indeterminate
-        ? LOADING_DEFAULT_CYCLE
-        : DEFAULT_DURATION
+        ? defaults.loadingCycle
+        : defaults.duration
   const control = resolveControl(input.control, indeterminate)
   const steps =
     shape === 'bar' &&
@@ -245,7 +269,8 @@ export const normalizeProgress = (input: ProgressInput, id: number): ProgressIte
     mode: PROGRESS_MODES.includes(input.mode as ProgressMode)
       ? (input.mode as ProgressMode)
       : 'fill',
-    color: typeof input.color === 'string' && isValidHex(input.color) ? input.color : DEFAULT_COLOR,
+    color:
+      typeof input.color === 'string' && isValidHex(input.color) ? input.color : defaults.color,
     showPercentage,
     showTime:
       input.showTime === true &&
@@ -256,7 +281,11 @@ export const normalizeProgress = (input: ProgressInput, id: number): ProgressIte
     background: shape === 'circle' ? false : input.background !== false,
     size,
     indeterminate,
-    position: resolvePosition(indeterminate, input.position),
+    position: resolvePosition(
+      indeterminate,
+      input.position,
+      indeterminate ? defaults.loadingPosition : defaults.position,
+    ),
     control,
     steps,
     startedAt: Date.now(),

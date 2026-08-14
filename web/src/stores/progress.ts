@@ -1,9 +1,35 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { normalizeProgress } from '@/utils/progress'
-import type { ProgressInput, ProgressItem } from '@/utils/progress'
+import {
+  CIRCLE_MAX_SIZE,
+  CIRCLE_MIN_SIZE,
+  LOADING_POSITIONS,
+  MIN_DURATION,
+  PROGRESS_BASE_DEFAULTS,
+  TIMED_POSITIONS,
+  isValidHex,
+  normalizeProgress,
+} from '@/utils/progress'
+import type {
+  ProgressDefaults,
+  ProgressInput,
+  ProgressItem,
+  ProgressPosition,
+} from '@/utils/progress'
 
 export type ProgressPhase = 'running' | 'done' | 'cancelled' | 'failed'
+
+export interface ProgressConfigInput {
+  defaultColor?: string
+  defaultDuration?: number
+  defaultPosition?: ProgressPosition
+  defaultLoadingPosition?: ProgressPosition
+  defaultCircleSize?: number
+  defaultLoadingCycle?: number
+}
+
+const timedPositions: readonly ProgressPosition[] = TIMED_POSITIONS
+const loadingPositions: readonly ProgressPosition[] = LOADING_POSITIONS
 
 const DONE_HOLD = 950
 const CANCEL_HOLD = 500
@@ -18,6 +44,7 @@ export const useProgressStore = defineStore('progress', () => {
   const pausedAt = ref<number | null>(null)
   const value = ref(0)
   const stepsDone = ref(0)
+  const defaults = ref<ProgressDefaults>({ ...PROGRESS_BASE_DEFAULTS })
 
   let nextId = 1
   let endTimer: ReturnType<typeof setTimeout> | null = null
@@ -99,9 +126,46 @@ export const useProgressStore = defineStore('progress', () => {
     }
   }
 
+  const setConfig = (config: ProgressConfigInput): void => {
+    if (typeof config !== 'object' || config === null) {
+      return
+    }
+    const next = { ...defaults.value }
+    if (typeof config.defaultColor === 'string' && isValidHex(config.defaultColor)) {
+      next.color = config.defaultColor
+    }
+    if (
+      typeof config.defaultDuration === 'number' &&
+      Number.isFinite(config.defaultDuration) &&
+      config.defaultDuration > 0
+    ) {
+      next.duration = Math.max(MIN_DURATION, Math.floor(config.defaultDuration))
+    }
+    if (timedPositions.includes(config.defaultPosition as ProgressPosition)) {
+      next.position = config.defaultPosition as ProgressPosition
+    }
+    if (loadingPositions.includes(config.defaultLoadingPosition as ProgressPosition)) {
+      next.loadingPosition = config.defaultLoadingPosition as ProgressPosition
+    }
+    if (typeof config.defaultCircleSize === 'number' && Number.isFinite(config.defaultCircleSize)) {
+      next.circleSize = Math.min(
+        CIRCLE_MAX_SIZE,
+        Math.max(CIRCLE_MIN_SIZE, Math.round(config.defaultCircleSize)),
+      )
+    }
+    if (
+      typeof config.defaultLoadingCycle === 'number' &&
+      Number.isFinite(config.defaultLoadingCycle) &&
+      config.defaultLoadingCycle > 0
+    ) {
+      next.loadingCycle = Math.floor(config.defaultLoadingCycle)
+    }
+    defaults.value = next
+  }
+
   const start = (input: ProgressInput): ProgressItem => {
     clearTimers()
-    const item = normalizeProgress(input, nextId++)
+    const item = normalizeProgress(input, nextId++, defaults.value)
     current.value = item
     phase.value = 'running'
     stoppedAt.value = null
@@ -264,6 +328,7 @@ export const useProgressStore = defineStore('progress', () => {
     pausedAt,
     value,
     stepsDone,
+    setConfig,
     start,
     setValue,
     setHeld,

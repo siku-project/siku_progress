@@ -8,6 +8,7 @@ import 'vuetify/styles'
 
 import App from './App.vue'
 import i18n from './i18n'
+import { DEV_MESSAGES } from '@/mock/locale'
 
 const vuetify = createVuetify({
   theme: {
@@ -27,5 +28,11 @@ const app = createApp(App)
 app.use(createPinia())
 app.use(vuetify)
 app.use(i18n)
+
+if (import.meta.env.DEV) {
+  for (const [language, messages] of Object.entries(DEV_MESSAGES)) {
+    i18n.global.setLocaleMessage(language, messages)
+  }
+}
 
 app.mount('#app')
