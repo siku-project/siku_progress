@@ -13,7 +13,7 @@ const props = defineProps<{
 
 const SIZE = 120
 const STROKE = 10
-const GLOW = 6
+const GLOW = 4
 const RADIUS = (SIZE - STROKE - GLOW) / 2 - 1
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 const CENTER = SIZE / 2
@@ -82,29 +82,29 @@ const dashStyle = computed(() => ({
 
 <template>
   <div
-    class="ring"
-    :class="{ 'ring--done': phase === 'done', 'ring--cancelled': phase === 'cancelled' }"
+    class="gauge"
+    :class="{ 'gauge--done': phase === 'done', 'gauge--cancelled': phase === 'cancelled' }"
   >
     <svg :width="SIZE" :height="SIZE" :viewBox="`0 0 ${SIZE} ${SIZE}`" aria-hidden="true">
       <circle
-        class="ring__border"
+        class="gauge__border"
         :cx="CENTER"
         :cy="CENTER"
         :r="RADIUS"
         :stroke-width="STROKE + 2"
       />
-      <circle class="ring__track" :cx="CENTER" :cy="CENTER" :r="RADIUS" :stroke-width="STROKE" />
+      <circle class="gauge__track" :cx="CENTER" :cy="CENTER" :r="RADIUS" :stroke-width="STROKE" />
       <g :transform="groupTransform">
         <circle
-          class="ring__glow"
+          class="gauge__glow"
           :cx="CENTER"
           :cy="CENTER"
           :r="RADIUS"
           :stroke-width="STROKE + GLOW"
-          :style="{ ...dashStyle, stroke: hexToRgba(item.color, 0.18) }"
+          :style="{ ...dashStyle, stroke: hexToRgba(item.color, 0.11) }"
         />
         <circle
-          class="ring__arc"
+          class="gauge__arc"
           :cx="CENTER"
           :cy="CENTER"
           :r="RADIUS"
@@ -112,7 +112,7 @@ const dashStyle = computed(() => ({
           :style="{ ...dashStyle, stroke: hexToRgba(item.color, 0.82) }"
         />
         <circle
-          class="ring__frost"
+          class="gauge__frost"
           :cx="CENTER"
           :cy="CENTER"
           :r="RADIUS"
@@ -122,54 +122,54 @@ const dashStyle = computed(() => ({
       </g>
     </svg>
 
-    <div class="ring__center">
+    <div class="gauge__center">
       <slot />
     </div>
   </div>
 </template>
 
 <style scoped>
-.ring {
+.gauge {
   position: relative;
   display: inline-flex;
   outline: none;
   transition: filter 0.3s ease;
 }
 
-.ring svg {
+.gauge svg {
   display: block;
   outline: none;
   border: none;
   overflow: visible;
 }
 
-.ring__border {
+.gauge__border {
   fill: none;
   stroke: rgba(212, 231, 247, 0.16);
 }
 
-.ring__track {
+.gauge__track {
   fill: none;
   stroke: rgba(10, 23, 41, 0.66);
 }
 
-.ring__glow {
+.gauge__glow {
   fill: none;
   stroke-linecap: round;
 }
 
-.ring__arc {
+.gauge__arc {
   fill: none;
   stroke-linecap: round;
 }
 
-.ring__frost {
+.gauge__frost {
   fill: none;
   stroke: rgba(255, 255, 255, 0.3);
   stroke-linecap: round;
 }
 
-.ring__center {
+.gauge__center {
   position: absolute;
   inset: 0;
   display: flex;
@@ -178,11 +178,11 @@ const dashStyle = computed(() => ({
   pointer-events: none;
 }
 
-.ring--done {
+.gauge--done {
   filter: brightness(1.22);
 }
 
-.ring--cancelled {
+.gauge--cancelled {
   filter: saturate(0.35) brightness(0.85);
 }
 </style>
