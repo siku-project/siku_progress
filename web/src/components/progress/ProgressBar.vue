@@ -21,12 +21,11 @@ const { percent } = useProgressPercentage(item, phase, stoppedAt)
 const hasHeader = computed(() => Boolean(props.item.label) || props.item.showPercentage)
 
 const wrapper = computed(() => (props.item.background ? IcePanel : 'div'))
-const wrapperProps = computed(() => (props.item.background ? { variant: 'secondary' } : {}))
 </script>
 
 <template>
   <div class="bar" :class="{ 'bar--cancelled': phase === 'cancelled' }">
-    <component :is="wrapper" v-bind="wrapperProps" class="bar__panel">
+    <component :is="wrapper" class="bar__panel">
       <div
         class="bar__inner"
         :class="{ 'bar__inner--boxed': item.background, 'bar__inner--bare': !hasHeader }"
@@ -51,10 +50,6 @@ const wrapperProps = computed(() => (props.item.background ? { variant: 'seconda
 
 .bar--cancelled {
   filter: saturate(0.5);
-}
-
-.bar__panel {
-  border-radius: 1rem;
 }
 
 .bar__inner {
