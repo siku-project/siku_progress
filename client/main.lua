@@ -96,7 +96,7 @@ local function sendConfig()
   })
 end
 
---- Settles a pending progress, notifying its handler, the server and listeners.
+--- Settles a pending progress, notifying its handler and the server.
 ---@param token number The token of the progress to settle.
 ---@param result string The outcome: 'done', 'cancelled' or 'failed'.
 ---@return nil
@@ -117,7 +117,6 @@ local function settlePending(token, result)
   if entry.serverToken then
     TriggerServerEvent('siku_progress:server:finished', entry.serverToken, result)
   end
-  TriggerEvent('siku_progress:client:finished', result)
 end
 
 --- Starts a progress, replacing any active one (settled as cancelled).
