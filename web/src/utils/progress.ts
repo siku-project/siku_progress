@@ -268,8 +268,9 @@ export const formatRemaining = (ms: number, approximate = false): string => {
   const prefix = approximate ? '~' : ''
 
   if (clamped >= 60000) {
-    const minutes = Math.floor(clamped / 60000)
-    const seconds = Math.round((clamped % 60000) / 1000)
+    const totalSeconds = Math.round(clamped / 1000)
+    const minutes = Math.floor(totalSeconds / 60)
+    const seconds = totalSeconds % 60
     return `${prefix}${minutes}:${String(seconds).padStart(2, '0')}`
   }
 

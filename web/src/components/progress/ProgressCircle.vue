@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue'
 import ProgressRing from './ProgressRing.vue'
-import { resolveIcon } from '@/utils/icons'
+import ProgressLabel from './ProgressLabel.vue'
 import { useProgressPercentage } from '@/composables/useProgressPercentage'
 import { useProgressTime } from '@/composables/useProgressTime'
 import type { ProgressItem } from '@/utils/progress'
@@ -14,7 +14,6 @@ const props = defineProps<{
   paused: boolean
   pausedAt: number | null
   value: number
-  stepsDone?: number
 }>()
 
 const item = toRef(props, 'item')
@@ -49,15 +48,13 @@ const shownPercent = computed(() =>
       'circle--paused': paused,
     }"
   >
-    <span v-if="hasLabel && item.labelPosition === 'top'" class="circle__label">
-      <v-icon
-        v-if="item.icon"
-        class="circle__label-icon"
-        size="15"
-        :icon="resolveIcon(item.icon)"
-      />
-      <template v-if="item.label">{{ item.label }}</template>
-    </span>
+    <ProgressLabel
+      v-if="hasLabel && item.labelPosition === 'top'"
+      :icon="item.icon"
+      :label="item.label"
+      center
+      :flicker="phase === 'failed'"
+    />
 
     <ProgressRing
       :item="item"
@@ -83,15 +80,13 @@ const shownPercent = computed(() =>
       </span>
     </ProgressRing>
 
-    <span v-if="hasLabel && item.labelPosition === 'bottom'" class="circle__label">
-      <v-icon
-        v-if="item.icon"
-        class="circle__label-icon"
-        size="15"
-        :icon="resolveIcon(item.icon)"
-      />
-      <template v-if="item.label">{{ item.label }}</template>
-    </span>
+    <ProgressLabel
+      v-if="hasLabel && item.labelPosition === 'bottom'"
+      :icon="item.icon"
+      :label="item.label"
+      center
+      :flicker="phase === 'failed'"
+    />
   </div>
 </template>
 
@@ -113,50 +108,9 @@ const shownPercent = computed(() =>
   filter: saturate(0.7) brightness(0.92);
 }
 
-.circle--failed .circle__label,
 .circle--failed .circle__percent,
 .circle--failed .circle__time {
-  animation: text-flicker 520ms steps(2) 2;
-}
-
-@keyframes text-flicker {
-  0% {
-    opacity: 1;
-  }
-  25% {
-    opacity: 0.4;
-  }
-  50% {
-    opacity: 0.9;
-  }
-  75% {
-    opacity: 0.5;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-.circle__label {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  font-size: 13px;
-  font-weight: 400;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  text-align: center;
-  color: rgba(244, 250, 255, 0.97);
-  text-shadow:
-    0 1px 3px rgba(5, 14, 30, 0.85),
-    0 1px 10px rgba(5, 14, 30, 0.6);
-  overflow-wrap: anywhere;
-}
-
-.circle__label-icon {
-  color: rgba(226, 240, 250, 0.9);
-  filter: drop-shadow(0 1px 3px rgba(5, 14, 30, 0.7));
+  animation: progress-text-flicker 520ms steps(2) 2;
 }
 
 .circle__time {

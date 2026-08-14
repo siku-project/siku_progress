@@ -3,7 +3,7 @@ import { computed, toRef } from 'vue'
 import IcePanel from '@/components/ui/IcePanel.vue'
 import ProgressTrack from './ProgressTrack.vue'
 import ProgressStepTrack from './ProgressStepTrack.vue'
-import { resolveIcon } from '@/utils/icons'
+import ProgressLabel from './ProgressLabel.vue'
 import { useProgressPercentage } from '@/composables/useProgressPercentage'
 import { useProgressTime } from '@/composables/useProgressTime'
 import type { ProgressItem } from '@/utils/progress'
@@ -62,15 +62,12 @@ const wrapper = computed(() => (props.item.background ? IcePanel : 'div'))
         :class="{ 'bar__inner--boxed': item.background, 'bar__inner--bare': !hasHeader }"
       >
         <div v-if="hasHeader" class="bar__header">
-          <span v-if="hasLabel" class="bar__label">
-            <v-icon
-              v-if="item.icon"
-              class="bar__label-icon"
-              size="15"
-              :icon="resolveIcon(item.icon)"
-            />
-            <template v-if="item.label">{{ item.label }}</template>
-          </span>
+          <ProgressLabel
+            v-if="hasLabel"
+            :icon="item.icon"
+            :label="item.label"
+            :flicker="phase === 'failed'"
+          />
           <span v-if="hasMeta" class="bar__meta">
             <span v-if="item.showPercentage" class="bar__percent">{{ metaText }}</span>
             <span v-if="item.showTime && time" class="bar__time">{{ time }}</span>
@@ -107,28 +104,9 @@ const wrapper = computed(() => (props.item.background ? IcePanel : 'div'))
   filter: saturate(0.7) brightness(0.92);
 }
 
-.bar--failed .bar__label,
 .bar--failed .bar__percent,
 .bar--failed .bar__time {
-  animation: text-flicker 520ms steps(2) 2;
-}
-
-@keyframes text-flicker {
-  0% {
-    opacity: 1;
-  }
-  25% {
-    opacity: 0.4;
-  }
-  50% {
-    opacity: 0.9;
-  }
-  75% {
-    opacity: 0.5;
-  }
-  100% {
-    opacity: 1;
-  }
+  animation: progress-text-flicker 520ms steps(2) 2;
 }
 
 .bar--celebrate {
@@ -170,26 +148,6 @@ const wrapper = computed(() => (props.item.background ? IcePanel : 'div'))
   justify-content: space-between;
   gap: 14px;
   min-height: 18px;
-}
-
-.bar__label {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 13px;
-  font-weight: 400;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: rgba(244, 250, 255, 0.97);
-  text-shadow:
-    0 1px 3px rgba(5, 14, 30, 0.85),
-    0 1px 10px rgba(5, 14, 30, 0.6);
-  overflow-wrap: anywhere;
-}
-
-.bar__label-icon {
-  color: rgba(226, 240, 250, 0.9);
-  filter: drop-shadow(0 1px 3px rgba(5, 14, 30, 0.7));
 }
 
 .bar__meta {

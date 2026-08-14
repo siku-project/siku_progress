@@ -33,6 +33,9 @@ export const useProgressPercentage = (
   const run = (): void => {
     stop()
     apply(0)
+    if (!item.value.showPercentage || item.value.control || item.value.steps) {
+      return
+    }
     interval = setInterval(() => {
       if (paused?.value) {
         return

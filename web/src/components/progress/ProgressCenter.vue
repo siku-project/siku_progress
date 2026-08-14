@@ -8,17 +8,24 @@ import { useProgressStore } from '@/stores/progress'
 const store = useProgressStore()
 const { current, phase, stoppedAt, paused, pausedAt, value, stepsDone } = storeToRefs(store)
 
-const widget = computed(() => (current.value?.shape === 'circle' ? ProgressCircle : ProgressBar))
-
 const stageClass = computed(() => `stage--${current.value?.position ?? 'bottom-center'}`)
 </script>
 
 <template>
   <div class="stage" :class="stageClass">
     <Transition name="progress-pop">
-      <component
-        :is="widget"
-        v-if="current"
+      <ProgressCircle
+        v-if="current && current.shape === 'circle'"
+        :key="current.id"
+        :item="current"
+        :phase="phase"
+        :stopped-at="stoppedAt"
+        :paused="paused"
+        :paused-at="pausedAt"
+        :value="value"
+      />
+      <ProgressBar
+        v-else-if="current"
         :key="current.id"
         :item="current"
         :phase="phase"
