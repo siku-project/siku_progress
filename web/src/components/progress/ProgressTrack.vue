@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import '@/assets/progress-effects.css'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import type { BarDirection, ProgressItem } from '@/utils/progress'
 import { FAIL_COLOR, SUCCESS_COLOR } from '@/utils/progress'
 import { frostFillStyle } from '@/utils/progressStyle'
@@ -47,9 +47,30 @@ const frozenRatio = computed<number | null>(() => {
   return Math.min(1, Math.max(0, ratio))
 })
 
+const snapRatio = ref<number | null>(null)
+
+watch(
+  () => props.phase,
+  (next) => {
+    if (next !== 'done' || props.item.control || props.item.indeterminate) {
+      return
+    }
+    const ratio = (Date.now() - props.item.startedAt) / props.item.duration
+    snapRatio.value = Math.min(1, Math.max(0, ratio))
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        snapRatio.value = null
+      })
+    })
+  },
+)
+
 const scaleFor = (segment: ProgressSegment): number => {
   if (props.item.control) {
     return segment.from + (segment.to - segment.from) * (props.value ?? 0)
+  }
+  if (snapRatio.value !== null) {
+    return segment.from + (segment.to - segment.from) * snapRatio.value
   }
   if (stoppedRatio.value !== null) {
     return segment.from + (segment.to - segment.from) * stoppedRatio.value
@@ -62,7 +83,13 @@ const scaleFor = (segment: ProgressSegment): number => {
 
 const transitionFor = (): string => {
   if (props.item.control) {
+    if (props.phase === 'done') {
+      return '180ms'
+    }
     return props.phase === 'running' && !props.paused ? '90ms' : '0ms'
+  }
+  if (props.phase === 'done') {
+    return snapRatio.value !== null ? '0ms' : '180ms'
   }
   if (props.phase === 'cancelled' || props.phase === 'failed' || props.paused) {
     return '0ms'

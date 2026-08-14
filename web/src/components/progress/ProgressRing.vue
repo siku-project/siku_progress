@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import '@/assets/progress-effects.css'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import type { CircleDirection, ProgressItem } from '@/utils/progress'
 import { FAIL_COLOR, GLITCH_COLD_COLOR, SUCCESS_COLOR, hexToRgba } from '@/utils/progress'
 import { resolveCircleSweep } from '@/utils/progressGeometry'
@@ -63,12 +63,33 @@ const frozenRatio = computed<number | null>(() => {
   return Math.min(1, Math.max(0, ratio))
 })
 
+const snapRatio = ref<number | null>(null)
+
+watch(
+  () => props.phase,
+  (next) => {
+    if (next !== 'done' || props.item.control || props.item.indeterminate) {
+      return
+    }
+    const ratio = (Date.now() - props.item.startedAt) / props.item.duration
+    snapRatio.value = Math.min(1, Math.max(0, ratio))
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        snapRatio.value = null
+      })
+    })
+  },
+)
+
 const arcRatio = computed<number>(() => {
   if (props.item.indeterminate) {
     return props.phase === 'done' ? 1 : 0.27
   }
   if (props.item.control) {
     return sweep.value.from + (sweep.value.to - sweep.value.from) * (props.value ?? 0)
+  }
+  if (snapRatio.value !== null) {
+    return sweep.value.from + (sweep.value.to - sweep.value.from) * snapRatio.value
   }
   if (stoppedRatio.value !== null) {
     return sweep.value.from + (sweep.value.to - sweep.value.from) * stoppedRatio.value
@@ -100,17 +121,22 @@ const dashOffset = computed(() => {
 
 const transition = computed(() => {
   if (props.item.control) {
+    if (props.phase === 'done') {
+      return 'stroke-dasharray 180ms linear, stroke-dashoffset 180ms linear'
+    }
     return props.phase === 'running' && !props.paused
       ? 'stroke-dasharray 90ms linear, stroke-dashoffset 90ms linear'
       : 'none'
   }
-  if (
-    props.item.indeterminate ||
-    props.phase === 'cancelled' ||
-    props.phase === 'failed' ||
-    props.paused ||
-    !running.value
-  ) {
+  if (props.item.indeterminate) {
+    return 'none'
+  }
+  if (props.phase === 'done') {
+    return snapRatio.value !== null
+      ? 'none'
+      : 'stroke-dasharray 180ms linear, stroke-dashoffset 180ms linear'
+  }
+  if (props.phase === 'cancelled' || props.phase === 'failed' || props.paused || !running.value) {
     return 'none'
   }
   const remaining = Math.max(props.item.startedAt + props.item.duration - Date.now(), 0)

@@ -60,6 +60,15 @@ export const useProgressStore = defineStore('progress', () => {
   const finish = (result: Exclude<ProgressPhase, 'running'>): void => {
     clearTimers()
     settlePause()
+    const item = current.value
+    if (result === 'done' && item && !item.indeterminate) {
+      if (item.steps) {
+        stepsDone.value = item.steps
+      }
+      if (item.control) {
+        value.value = 1
+      }
+    }
     phase.value = result
     stoppedAt.value = Date.now()
     const steps = current.value?.steps
