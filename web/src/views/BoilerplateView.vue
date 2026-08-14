@@ -5,8 +5,11 @@ import backgroundUrl from '@/assets/boilerplate-background.jpg'
 import DevTopBar from '@/components/boilerplate/DevTopBar.vue'
 import DevFab from '@/components/boilerplate/DevFab.vue'
 import DevViewSelector from '@/components/boilerplate/DevViewSelector.vue'
+import ProgressDevPanel from '@/components/dev/ProgressDevPanel.vue'
 
-const viewComponents: Record<string, Component> = {}
+const viewComponents: Record<string, Component> = {
+  Progression: ProgressDevPanel,
+}
 
 const views: string[] = Object.keys(viewComponents)
 const currentView = ref('none')

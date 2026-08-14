@@ -1,0 +1,197 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import IcePanel from '@/components/ui/IcePanel.vue'
+import ProgressCenter from '@/components/progress/ProgressCenter.vue'
+import DevField from '@/components/dev/controls/DevField.vue'
+import DevToggleGroup from '@/components/dev/controls/DevToggleGroup.vue'
+import DevSwatches from '@/components/dev/controls/DevSwatches.vue'
+import DevCheck from '@/components/dev/controls/DevCheck.vue'
+import DevButton from '@/components/dev/controls/DevButton.vue'
+import { useProgressStore } from '@/stores/progress'
+import { DEFAULT_COLOR, LABEL_ADVISED_MAX } from '@/utils/progress'
+import type { ProgressDirection, ProgressMode } from '@/utils/progress'
+
+const store = useProgressStore()
+
+const label = ref('Fouille du véhicule…')
+const direction = ref<ProgressDirection>('left-right')
+const mode = ref<ProgressMode>('fill')
+const duration = ref(5000)
+const color = ref(DEFAULT_COLOR)
+const showPercentage = ref(true)
+
+const DIRECTION_OPTIONS = [
+  { value: 'left-right', label: 'Gauche → droite' },
+  { value: 'right-left', label: 'Droite → gauche' },
+  { value: 'edges-center', label: 'Bords → centre' },
+  { value: 'center-edges', label: 'Centre → bords' },
+]
+
+const MODE_OPTIONS = [
+  { value: 'fill', label: 'Remplissage' },
+  { value: 'drain', label: 'Vidage' },
+]
+
+const COLOR_PRESETS = ['#a1cbe8', '#ecf6ff', '#34d3a6', '#f0be60', '#f46e7a']
+
+const labelHint = computed(() => `${label.value.length}/${LABEL_ADVISED_MAX} conseillés`)
+const labelHintTone = computed(() =>
+  label.value.length > LABEL_ADVISED_MAX ? ('warning' as const) : ('muted' as const),
+)
+
+const start = (): void => {
+  store.start({
+    label: label.value,
+    direction: direction.value,
+    mode: mode.value,
+    duration: duration.value,
+    color: color.value,
+    showPercentage: showPercentage.value,
+  })
+}
+
+const cancel = (): void => {
+  store.cancel()
+}
+
+const presetSearch = (): void => {
+  store.start({
+    label: 'Fouille en cours…',
+    direction: 'left-right',
+    mode: 'fill',
+    duration: 5000,
+    showPercentage: true,
+  })
+}
+
+const presetLockpick = (): void => {
+  store.start({
+    label: 'Crochetage',
+    direction: 'edges-center',
+    mode: 'fill',
+    duration: 8000,
+    color: '#ecf6ff',
+  })
+}
+
+const presetHold = (): void => {
+  store.start({
+    label: 'Tenez la position',
+    direction: 'center-edges',
+    mode: 'drain',
+    duration: 4000,
+    color: '#f0be60',
+    showPercentage: true,
+  })
+}
+
+const presetMinimal = (): void => {
+  store.start({
+    direction: 'left-right',
+    mode: 'fill',
+    duration: 2500,
+  })
+}
+</script>
+
+<template>
+  <ProgressCenter />
+
+  <div class="panel">
+    <IcePanel variant="primary" class="panel__box">
+      <div class="panel__body">
+        <p class="ice-title panel__title text-[10px]">Progression — Dev</p>
+
+        <DevField label="Direction">
+          <DevToggleGroup v-model="direction" :options="DIRECTION_OPTIONS" :columns="2" />
+        </DevField>
+
+        <DevField label="Mode">
+          <DevToggleGroup v-model="mode" :options="MODE_OPTIONS" />
+        </DevField>
+
+        <DevField label="Texte" :hint="labelHint" :hint-tone="labelHintTone">
+          <input v-model="label" type="text" />
+        </DevField>
+
+        <div class="panel__row">
+          <DevField label="Durée (ms)">
+            <input v-model.number="duration" type="number" min="100" step="500" />
+          </DevField>
+
+          <DevField label="Couleur (hex)">
+            <input v-model="color" type="text" spellcheck="false" />
+          </DevField>
+        </div>
+
+        <DevSwatches v-model="color" :colors="COLOR_PRESETS" />
+
+        <DevCheck v-model="showPercentage" label="Afficher le pourcentage" />
+
+        <div class="panel__actions">
+          <DevButton variant="primary" @click="start">Lancer</DevButton>
+          <DevButton @click="cancel">Annuler</DevButton>
+        </div>
+
+        <div class="ice-divider panel__divider"></div>
+
+        <div class="panel__presets">
+          <DevButton variant="ghost" @click="presetSearch">Fouille 5s</DevButton>
+          <DevButton variant="ghost" @click="presetLockpick">Crochetage 8s</DevButton>
+          <DevButton variant="ghost" @click="presetHold">Attente 4s</DevButton>
+          <DevButton variant="ghost" @click="presetMinimal">Minimal 2,5s</DevButton>
+        </div>
+      </div>
+    </IcePanel>
+  </div>
+</template>
+
+<style scoped>
+.panel {
+  position: fixed;
+  top: 50%;
+  left: 2.5rem;
+  z-index: 60;
+  width: 320px;
+  max-width: 90vw;
+  transform: translateY(-50%);
+}
+
+.panel__box {
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+.panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px;
+}
+
+.panel__title {
+  text-align: center;
+  margin-bottom: 2px;
+}
+
+.panel__row {
+  display: flex;
+  gap: 12px;
+}
+
+.panel__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.panel__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.panel__divider {
+  height: 1px;
+  width: 100%;
+}
+</style>
