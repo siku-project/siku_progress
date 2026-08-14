@@ -11,10 +11,12 @@ const props = defineProps<{
   stoppedAt: number | null
 }>()
 
-const SIZE = 116
-const STROKE = 9
-const RADIUS = (SIZE - STROKE) / 2
+const SIZE = 120
+const STROKE = 10
+const GLOW = 6
+const RADIUS = (SIZE - STROKE - GLOW) / 2 - 1
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
+const CENTER = SIZE / 2
 
 const running = ref(false)
 
@@ -66,13 +68,15 @@ const transition = computed(() => {
   return `stroke-dasharray ${props.item.duration}ms linear, stroke-dashoffset ${props.item.duration}ms linear`
 })
 
-const groupTransform = computed(
-  () => `${sweep.value.mirror ? 'scaleX(-1) ' : ''}rotate(${sweep.value.rotate}deg)`,
-)
+const groupTransform = computed(() => {
+  const rotate = `rotate(${sweep.value.rotate} ${CENTER} ${CENTER})`
+  return sweep.value.mirror ? `matrix(-1 0 0 1 ${SIZE} 0) ${rotate}` : rotate
+})
 
-const arcStyle = computed(() => ({
-  stroke: hexToRgba(props.item.color, 0.85),
-  filter: `drop-shadow(0 0 6px ${hexToRgba(props.item.color, 0.45)})`,
+const dashStyle = computed(() => ({
+  strokeDasharray: dashArray.value,
+  strokeDashoffset: dashOffset.value,
+  transition: transition.value,
 }))
 </script>
 
@@ -81,39 +85,39 @@ const arcStyle = computed(() => ({
     class="ring"
     :class="{ 'ring--done': phase === 'done', 'ring--cancelled': phase === 'cancelled' }"
   >
-    <svg :width="SIZE" :height="SIZE" :viewBox="`0 0 ${SIZE} ${SIZE}`">
+    <svg :width="SIZE" :height="SIZE" :viewBox="`0 0 ${SIZE} ${SIZE}`" aria-hidden="true">
       <circle
-        class="ring__track"
-        :cx="SIZE / 2"
-        :cy="SIZE / 2"
+        class="ring__border"
+        :cx="CENTER"
+        :cy="CENTER"
         :r="RADIUS"
-        :stroke-width="STROKE"
+        :stroke-width="STROKE + 2"
       />
-      <g class="ring__sweep" :style="{ transform: groupTransform }">
+      <circle class="ring__track" :cx="CENTER" :cy="CENTER" :r="RADIUS" :stroke-width="STROKE" />
+      <g :transform="groupTransform">
+        <circle
+          class="ring__glow"
+          :cx="CENTER"
+          :cy="CENTER"
+          :r="RADIUS"
+          :stroke-width="STROKE + GLOW"
+          :style="{ ...dashStyle, stroke: hexToRgba(item.color, 0.18) }"
+        />
         <circle
           class="ring__arc"
-          :cx="SIZE / 2"
-          :cy="SIZE / 2"
+          :cx="CENTER"
+          :cy="CENTER"
           :r="RADIUS"
-          :stroke-width="STROKE"
-          :style="{
-            ...arcStyle,
-            strokeDasharray: dashArray,
-            strokeDashoffset: dashOffset,
-            transition,
-          }"
+          :stroke-width="STROKE - 2"
+          :style="{ ...dashStyle, stroke: hexToRgba(item.color, 0.82) }"
         />
         <circle
           class="ring__frost"
-          :cx="SIZE / 2"
-          :cy="SIZE / 2"
+          :cx="CENTER"
+          :cy="CENTER"
           :r="RADIUS"
-          :stroke-width="3"
-          :style="{
-            strokeDasharray: dashArray,
-            strokeDashoffset: dashOffset,
-            transition,
-          }"
+          :stroke-width="2.5"
+          :style="dashStyle"
         />
       </g>
     </svg>
@@ -128,16 +132,30 @@ const arcStyle = computed(() => ({
 .ring {
   position: relative;
   display: inline-flex;
+  outline: none;
   transition: filter 0.3s ease;
+}
+
+.ring svg {
+  display: block;
+  outline: none;
+  border: none;
+  overflow: visible;
+}
+
+.ring__border {
+  fill: none;
+  stroke: rgba(212, 231, 247, 0.16);
 }
 
 .ring__track {
   fill: none;
-  stroke: rgba(212, 231, 247, 0.14);
+  stroke: rgba(10, 23, 41, 0.66);
 }
 
-.ring__sweep {
-  transform-origin: 50% 50%;
+.ring__glow {
+  fill: none;
+  stroke-linecap: round;
 }
 
 .ring__arc {
@@ -147,7 +165,7 @@ const arcStyle = computed(() => ({
 
 .ring__frost {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.22);
+  stroke: rgba(255, 255, 255, 0.3);
   stroke-linecap: round;
 }
 
