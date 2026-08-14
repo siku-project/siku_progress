@@ -2,6 +2,7 @@
 import { computed, toRef } from 'vue'
 import IcePanel from '@/components/ui/IcePanel.vue'
 import ProgressTrack from './ProgressTrack.vue'
+import { resolveIcon } from '@/utils/icons'
 import { useProgressPercentage } from '@/composables/useProgressPercentage'
 import { useProgressTime } from '@/composables/useProgressTime'
 import type { ProgressItem } from '@/utils/progress'
@@ -22,7 +23,9 @@ const { time } = useProgressTime(item, phase, stoppedAt)
 
 const hasMeta = computed(() => props.item.showPercentage || props.item.showTime)
 
-const hasHeader = computed(() => Boolean(props.item.label) || hasMeta.value)
+const hasLabel = computed(() => Boolean(props.item.label) || Boolean(props.item.icon))
+
+const hasHeader = computed(() => hasLabel.value || hasMeta.value)
 
 const celebrate = computed(() => props.phase === 'done' && !props.item.indeterminate)
 
@@ -44,7 +47,15 @@ const wrapper = computed(() => (props.item.background ? IcePanel : 'div'))
         :class="{ 'bar__inner--boxed': item.background, 'bar__inner--bare': !hasHeader }"
       >
         <div v-if="hasHeader" class="bar__header">
-          <span v-if="item.label" class="bar__label">{{ item.label }}</span>
+          <span v-if="hasLabel" class="bar__label">
+            <v-icon
+              v-if="item.icon"
+              class="bar__label-icon"
+              size="15"
+              :icon="resolveIcon(item.icon)"
+            />
+            <template v-if="item.label">{{ item.label }}</template>
+          </span>
           <span v-if="hasMeta" class="bar__meta">
             <span v-if="item.showPercentage" class="bar__percent">{{ percent }}%</span>
             <span v-if="item.showTime && time" class="bar__time">{{ time }}</span>
@@ -134,6 +145,9 @@ const wrapper = computed(() => (props.item.background ? IcePanel : 'div'))
 }
 
 .bar__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   font-size: 13px;
   font-weight: 400;
   letter-spacing: 0.13em;
@@ -143,6 +157,11 @@ const wrapper = computed(() => (props.item.background ? IcePanel : 'div'))
     0 1px 3px rgba(5, 14, 30, 0.85),
     0 1px 10px rgba(5, 14, 30, 0.6);
   overflow-wrap: anywhere;
+}
+
+.bar__label-icon {
+  color: rgba(226, 240, 250, 0.9);
+  filter: drop-shadow(0 1px 3px rgba(5, 14, 30, 0.7));
 }
 
 .bar__meta {

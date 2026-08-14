@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue'
 import ProgressRing from './ProgressRing.vue'
+import { resolveIcon } from '@/utils/icons'
 import { useProgressPercentage } from '@/composables/useProgressPercentage'
 import { useProgressTime } from '@/composables/useProgressTime'
 import type { ProgressItem } from '@/utils/progress'
@@ -26,6 +27,8 @@ const percentFontSize = computed(
 const timeFontSize = computed(
   () => `${Math.min(19, Math.max(12, Math.round(props.item.size * 0.13)))}px`,
 )
+
+const hasLabel = computed(() => Boolean(props.item.label) || Boolean(props.item.icon))
 </script>
 
 <template>
@@ -33,8 +36,14 @@ const timeFontSize = computed(
     class="circle"
     :class="{ 'circle--cancelled': phase === 'cancelled', 'circle--failed': phase === 'failed' }"
   >
-    <span v-if="item.label && item.labelPosition === 'top'" class="circle__label">
-      {{ item.label }}
+    <span v-if="hasLabel && item.labelPosition === 'top'" class="circle__label">
+      <v-icon
+        v-if="item.icon"
+        class="circle__label-icon"
+        size="15"
+        :icon="resolveIcon(item.icon)"
+      />
+      <template v-if="item.label">{{ item.label }}</template>
     </span>
 
     <ProgressRing :item="item" :phase="phase" :stopped-at="stoppedAt">
@@ -54,8 +63,14 @@ const timeFontSize = computed(
       </span>
     </ProgressRing>
 
-    <span v-if="item.label && item.labelPosition === 'bottom'" class="circle__label">
-      {{ item.label }}
+    <span v-if="hasLabel && item.labelPosition === 'bottom'" class="circle__label">
+      <v-icon
+        v-if="item.icon"
+        class="circle__label-icon"
+        size="15"
+        :icon="resolveIcon(item.icon)"
+      />
+      <template v-if="item.label">{{ item.label }}</template>
     </span>
   </div>
 </template>
@@ -99,6 +114,10 @@ const timeFontSize = computed(
 }
 
 .circle__label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   font-size: 13px;
   font-weight: 400;
   letter-spacing: 0.13em;
@@ -109,6 +128,11 @@ const timeFontSize = computed(
     0 1px 3px rgba(5, 14, 30, 0.85),
     0 1px 10px rgba(5, 14, 30, 0.6);
   overflow-wrap: anywhere;
+}
+
+.circle__label-icon {
+  color: rgba(226, 240, 250, 0.9);
+  filter: drop-shadow(0 1px 3px rgba(5, 14, 30, 0.7));
 }
 
 .circle__time {

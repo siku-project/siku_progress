@@ -39,10 +39,12 @@ export const CIRCLE_CENTER_MIN_SIZE = 96
 export const LOADING_DEFAULT_CYCLE = 1400
 
 const HEX_PATTERN = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
+const ICON_PATTERN = /^mdi-[a-z0-9-]+$/i
 
 export interface ProgressInput {
   shape?: ProgressShape
   label?: string
+  icon?: string
   labelPosition?: LabelPosition
   duration?: number
   direction?: ProgressDirection
@@ -59,6 +61,7 @@ export interface ProgressItem {
   id: number
   shape: ProgressShape
   label?: string
+  icon?: string
   labelPosition: LabelPosition
   duration: number
   direction: ProgressDirection
@@ -136,6 +139,7 @@ export const normalizeProgress = (input: ProgressInput, id: number): ProgressIte
     id,
     shape,
     label: label.length > 0 ? label : undefined,
+    icon: typeof input.icon === 'string' && ICON_PATTERN.test(input.icon) ? input.icon : undefined,
     labelPosition: LABEL_POSITIONS.includes(input.labelPosition as LabelPosition)
       ? (input.labelPosition as LabelPosition)
       : 'bottom',

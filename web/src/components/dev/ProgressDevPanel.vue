@@ -28,6 +28,7 @@ const store = useProgressStore()
 const kind = ref<'timed' | 'loading'>('timed')
 const shape = ref<ProgressShape>('bar')
 const label = ref('Fouille du véhicule…')
+const icon = ref('')
 const labelPosition = ref<LabelPosition>('bottom')
 const direction = ref<ProgressDirection>('left-right')
 const mode = ref<ProgressMode>('fill')
@@ -132,6 +133,7 @@ const start = (): void => {
     indeterminate: isLoading.value,
     shape: shape.value,
     label: label.value,
+    icon: icon.value || undefined,
     labelPosition: labelPosition.value,
     direction: direction.value,
     mode: mode.value,
@@ -159,6 +161,7 @@ const fail = (): void => {
 const presetSearch = (): void => {
   store.start({
     label: 'Fouille en cours…',
+    icon: 'mdi-magnify',
     direction: 'left-right',
     mode: 'fill',
     duration: 5000,
@@ -170,6 +173,7 @@ const presetSearch = (): void => {
 const presetLockpick = (): void => {
   store.start({
     label: 'Crochetage',
+    icon: 'mdi-key',
     direction: 'edges-center',
     mode: 'fill',
     duration: 8000,
@@ -192,6 +196,7 @@ const presetCircle = (): void => {
   store.start({
     shape: 'circle',
     label: 'Réanimation',
+    icon: 'mdi-heart-pulse',
     labelPosition: 'bottom',
     direction: 'clockwise',
     mode: 'fill',
@@ -228,6 +233,7 @@ const presetLoadingBar = (): void => {
   store.start({
     indeterminate: true,
     label: 'Connexion au serveur…',
+    icon: 'mdi-wifi',
     showTime: true,
   })
 }
@@ -279,6 +285,10 @@ const presetMinimal = (): void => {
 
         <DevField label="Texte" :hint="labelHint" :hint-tone="labelHintTone">
           <input v-model="label" type="text" />
+        </DevField>
+
+        <DevField label="Icône (mdi)">
+          <input v-model="icon" type="text" placeholder="mdi-magnify" spellcheck="false" />
         </DevField>
 
         <DevField v-if="isCircle" label="Position du texte">
