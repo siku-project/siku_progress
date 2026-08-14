@@ -8,6 +8,7 @@ export type ProgressPhase = 'running' | 'done' | 'cancelled' | 'failed'
 const DONE_HOLD = 950
 const CANCEL_HOLD = 500
 const FAIL_HOLD = 1000
+const CONTROL_TICK = 50
 
 export const useProgressStore = defineStore('progress', () => {
   const current = ref<ProgressItem | null>(null)
@@ -15,11 +16,15 @@ export const useProgressStore = defineStore('progress', () => {
   const stoppedAt = ref<number | null>(null)
   const paused = ref(false)
   const pausedAt = ref<number | null>(null)
+  const value = ref(0)
 
   let nextId = 1
   let endTimer: ReturnType<typeof setTimeout> | null = null
   let holdTimer: ReturnType<typeof setTimeout> | null = null
   let resumeTimer: ReturnType<typeof setTimeout> | null = null
+  let controlTimer: ReturnType<typeof setInterval> | null = null
+  let held = false
+  let everRose = false
 
   const clearTimers = (): void => {
     if (endTimer) {
@@ -33,6 +38,10 @@ export const useProgressStore = defineStore('progress', () => {
     if (resumeTimer) {
       clearTimeout(resumeTimer)
       resumeTimer = null
+    }
+    if (controlTimer) {
+      clearInterval(controlTimer)
+      controlTimer = null
     }
   }
 
@@ -57,6 +66,36 @@ export const useProgressStore = defineStore('progress', () => {
     )
   }
 
+  const applyValue = (next: number): void => {
+    const item = current.value
+    if (!item?.control) {
+      return
+    }
+    const clamped = Math.min(1, Math.max(0, next))
+    if (clamped > value.value) {
+      everRose = true
+    }
+    value.value = clamped
+    if (clamped >= 1 && item.control.completeAtFull) {
+      finish('done')
+    } else if (clamped <= 0 && item.control.failAtEmpty && everRose) {
+      finish('failed')
+    }
+  }
+
+  const tickControl = (): void => {
+    const item = current.value
+    if (!item?.control || phase.value !== 'running' || paused.value) {
+      return
+    }
+    const dt = CONTROL_TICK / 1000
+    if (item.control.mode === 'hold') {
+      applyValue(value.value + (held ? item.control.riseRate : -item.control.fallRate) * dt)
+    } else if (item.control.mode === 'pulse') {
+      applyValue(value.value - item.control.fallRate * dt)
+    }
+  }
+
   const start = (input: ProgressInput): ProgressItem => {
     clearTimers()
     const item = normalizeProgress(input, nextId++)
@@ -65,10 +104,54 @@ export const useProgressStore = defineStore('progress', () => {
     stoppedAt.value = null
     paused.value = false
     pausedAt.value = null
-    if (!item.indeterminate) {
+    held = false
+    everRose = false
+    value.value = item.control ? item.control.startAt : 0
+    if (item.control) {
+      if (item.control.mode !== 'direct') {
+        controlTimer = setInterval(tickControl, CONTROL_TICK)
+      }
+    } else if (!item.indeterminate) {
       endTimer = setTimeout(() => finish('done'), item.duration)
     }
     return item
+  }
+
+  const setValue = (next: number): boolean => {
+    if (!current.value?.control || phase.value !== 'running') {
+      return false
+    }
+    if (typeof next !== 'number' || !Number.isFinite(next)) {
+      return false
+    }
+    applyValue(next)
+    return true
+  }
+
+  const setHeld = (state: boolean): boolean => {
+    if (
+      !current.value?.control ||
+      current.value.control.mode !== 'hold' ||
+      phase.value !== 'running'
+    ) {
+      return false
+    }
+    held = state === true
+    return true
+  }
+
+  const pulse = (): boolean => {
+    const item = current.value
+    if (
+      !item?.control ||
+      item.control.mode !== 'pulse' ||
+      phase.value !== 'running' ||
+      paused.value
+    ) {
+      return false
+    }
+    applyValue(value.value + item.control.pulseGain)
+    return true
   }
 
   const pause = (autoResumeMs?: number): boolean => {
@@ -101,8 +184,10 @@ export const useProgressStore = defineStore('progress', () => {
       resumeTimer = null
     }
     settlePause()
-    const remaining = current.value.startedAt + current.value.duration - Date.now()
-    endTimer = setTimeout(() => finish('done'), Math.max(remaining, 0))
+    if (!current.value.control) {
+      const remaining = current.value.startedAt + current.value.duration - Date.now()
+      endTimer = setTimeout(() => finish('done'), Math.max(remaining, 0))
+    }
     return true
   }
 
@@ -141,7 +226,11 @@ export const useProgressStore = defineStore('progress', () => {
     stoppedAt,
     paused,
     pausedAt,
+    value,
     start,
+    setValue,
+    setHeld,
+    pulse,
     pause,
     resume,
     stop,

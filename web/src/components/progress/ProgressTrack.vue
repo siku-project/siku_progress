@@ -12,6 +12,7 @@ const props = defineProps<{
   stoppedAt: number | null
   paused?: boolean
   pausedAt?: number | null
+  value?: number
 }>()
 
 const running = ref(false)
@@ -45,6 +46,9 @@ const frozenRatio = computed<number | null>(() => {
 })
 
 const scaleFor = (segment: ProgressSegment): number => {
+  if (props.item.control) {
+    return segment.from + (segment.to - segment.from) * (props.value ?? 0)
+  }
   if (stoppedRatio.value !== null) {
     return segment.from + (segment.to - segment.from) * stoppedRatio.value
   }
@@ -55,6 +59,9 @@ const scaleFor = (segment: ProgressSegment): number => {
 }
 
 const transitionFor = (): string => {
+  if (props.item.control) {
+    return props.phase === 'running' && !props.paused ? '90ms' : '0ms'
+  }
   if (props.phase === 'cancelled' || props.phase === 'failed' || props.paused) {
     return '0ms'
   }

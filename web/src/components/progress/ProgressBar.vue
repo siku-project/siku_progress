@@ -14,6 +14,7 @@ const props = defineProps<{
   stoppedAt: number | null
   paused: boolean
   pausedAt: number | null
+  value: number
 }>()
 
 const item = toRef(props, 'item')
@@ -23,6 +24,10 @@ const paused = toRef(props, 'paused')
 
 const { percent } = useProgressPercentage(item, phase, stoppedAt, paused)
 const { time } = useProgressTime(item, phase, stoppedAt, paused)
+
+const shownPercent = computed(() =>
+  props.item.control ? Math.round(props.value * 100) : percent.value,
+)
 
 const hasMeta = computed(() => props.item.showPercentage || props.item.showTime)
 
@@ -61,7 +66,7 @@ const wrapper = computed(() => (props.item.background ? IcePanel : 'div'))
             <template v-if="item.label">{{ item.label }}</template>
           </span>
           <span v-if="hasMeta" class="bar__meta">
-            <span v-if="item.showPercentage" class="bar__percent">{{ percent }}%</span>
+            <span v-if="item.showPercentage" class="bar__percent">{{ shownPercent }}%</span>
             <span v-if="item.showTime && time" class="bar__time">{{ time }}</span>
           </span>
         </div>
@@ -72,6 +77,7 @@ const wrapper = computed(() => (props.item.background ? IcePanel : 'div'))
           :stopped-at="stoppedAt"
           :paused="paused"
           :paused-at="pausedAt"
+          :value="value"
         />
       </div>
     </component>

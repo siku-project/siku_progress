@@ -6,7 +6,7 @@ import ProgressCircle from './ProgressCircle.vue'
 import { useProgressStore } from '@/stores/progress'
 
 const store = useProgressStore()
-const { current, phase, stoppedAt, paused, pausedAt } = storeToRefs(store)
+const { current, phase, stoppedAt, paused, pausedAt, value } = storeToRefs(store)
 
 const widget = computed(() => (current.value?.shape === 'circle' ? ProgressCircle : ProgressBar))
 
@@ -25,6 +25,7 @@ const stageClass = computed(() => `stage--${current.value?.position ?? 'bottom-c
         :stopped-at="stoppedAt"
         :paused="paused"
         :paused-at="pausedAt"
+        :value="value"
       />
     </Transition>
   </div>

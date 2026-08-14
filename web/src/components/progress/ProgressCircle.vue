@@ -13,6 +13,7 @@ const props = defineProps<{
   stoppedAt: number | null
   paused: boolean
   pausedAt: number | null
+  value: number
 }>()
 
 const item = toRef(props, 'item')
@@ -32,6 +33,10 @@ const timeFontSize = computed(
 )
 
 const hasLabel = computed(() => Boolean(props.item.label) || Boolean(props.item.icon))
+
+const shownPercent = computed(() =>
+  props.item.control ? Math.round(props.value * 100) : percent.value,
+)
 </script>
 
 <template>
@@ -59,13 +64,14 @@ const hasLabel = computed(() => Boolean(props.item.label) || Boolean(props.item.
       :stopped-at="stoppedAt"
       :paused="paused"
       :paused-at="pausedAt"
+      :value="value"
     >
       <span
         v-if="item.showPercentage"
         class="circle__percent"
         :style="{ fontSize: percentFontSize }"
       >
-        {{ percent }}%
+        {{ shownPercent }}%
       </span>
       <span
         v-else-if="item.showTime && time"

@@ -11,6 +11,7 @@ const props = defineProps<{
   stoppedAt: number | null
   paused?: boolean
   pausedAt?: number | null
+  value?: number
 }>()
 
 const GLOW = 4
@@ -65,6 +66,9 @@ const arcRatio = computed<number>(() => {
   if (props.item.indeterminate) {
     return props.phase === 'done' ? 1 : 0.27
   }
+  if (props.item.control) {
+    return sweep.value.from + (sweep.value.to - sweep.value.from) * (props.value ?? 0)
+  }
   if (stoppedRatio.value !== null) {
     return sweep.value.from + (sweep.value.to - sweep.value.from) * stoppedRatio.value
   }
@@ -94,6 +98,11 @@ const dashOffset = computed(() => {
 })
 
 const transition = computed(() => {
+  if (props.item.control) {
+    return props.phase === 'running' && !props.paused
+      ? 'stroke-dasharray 90ms linear, stroke-dashoffset 90ms linear'
+      : 'none'
+  }
   if (
     props.item.indeterminate ||
     props.phase === 'cancelled' ||

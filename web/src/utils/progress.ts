@@ -41,6 +41,34 @@ export type ProgressPosition = (typeof LOADING_POSITIONS)[number]
 
 export const TIMED_POSITIONS = ['top-center', 'center', 'bottom-center'] as const
 
+export const CONTROL_MODES = ['direct', 'hold', 'pulse'] as const
+
+export type ControlMode = (typeof CONTROL_MODES)[number]
+
+export interface ProgressControlInput {
+  mode?: ControlMode
+  riseRate?: number
+  fallRate?: number
+  pulseGain?: number
+  startAt?: number
+  completeAtFull?: boolean
+  failAtEmpty?: boolean
+}
+
+export interface ProgressControl {
+  mode: ControlMode
+  riseRate: number
+  fallRate: number
+  pulseGain: number
+  startAt: number
+  completeAtFull: boolean
+  failAtEmpty: boolean
+}
+
+export const CONTROL_DEFAULT_RISE = 0.35
+export const CONTROL_DEFAULT_FALL = 0.25
+export const CONTROL_DEFAULT_PULSE_GAIN = 0.08
+
 export const LABEL_ADVISED_MAX = 40
 export const MIN_DURATION = 100
 export const DEFAULT_DURATION = 5000
@@ -72,6 +100,7 @@ export interface ProgressInput {
   size?: number
   indeterminate?: boolean
   position?: ProgressPosition
+  control?: ProgressControlInput
 }
 
 export interface ProgressItem {
@@ -90,6 +119,7 @@ export interface ProgressItem {
   size: number
   indeterminate: boolean
   position: ProgressPosition
+  control?: ProgressControl
   startedAt: number
 }
 
@@ -132,6 +162,36 @@ const resolveDirection = (
     : 'left-right'
 }
 
+const clamp01 = (value: number): number => Math.min(1, Math.max(0, value))
+
+const resolveControl = (
+  control: ProgressControlInput | undefined,
+  indeterminate: boolean,
+): ProgressControl | undefined => {
+  if (!control || typeof control !== 'object' || indeterminate) {
+    return undefined
+  }
+  const positive = (value: unknown, fallback: number): number =>
+    typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : fallback
+  return {
+    mode: CONTROL_MODES.includes(control.mode as ControlMode)
+      ? (control.mode as ControlMode)
+      : 'direct',
+    riseRate: positive(control.riseRate, CONTROL_DEFAULT_RISE),
+    fallRate:
+      typeof control.fallRate === 'number' && Number.isFinite(control.fallRate)
+        ? Math.max(0, control.fallRate)
+        : CONTROL_DEFAULT_FALL,
+    pulseGain: positive(control.pulseGain, CONTROL_DEFAULT_PULSE_GAIN),
+    startAt:
+      typeof control.startAt === 'number' && Number.isFinite(control.startAt)
+        ? clamp01(control.startAt)
+        : 0,
+    completeAtFull: control.completeAtFull !== false,
+    failAtEmpty: control.failAtEmpty === true,
+  }
+}
+
 const resolvePosition = (indeterminate: boolean, position?: ProgressPosition): ProgressPosition => {
   const allowed: readonly ProgressPosition[] = indeterminate ? LOADING_POSITIONS : TIMED_POSITIONS
   return allowed.includes(position as ProgressPosition)
@@ -155,6 +215,7 @@ export const normalizeProgress = (input: ProgressInput, id: number): ProgressIte
       : indeterminate
         ? LOADING_DEFAULT_CYCLE
         : DEFAULT_DURATION
+  const control = resolveControl(input.control, indeterminate)
   const showPercentage =
     input.showPercentage === true &&
     !indeterminate &&
@@ -177,12 +238,14 @@ export const normalizeProgress = (input: ProgressInput, id: number): ProgressIte
     showPercentage,
     showTime:
       input.showTime === true &&
+      !control &&
       !(shape === 'circle' && size < CIRCLE_CENTER_MIN_SIZE) &&
       !(shape === 'circle' && showPercentage),
     background: shape === 'circle' ? false : input.background !== false,
     size,
     indeterminate,
     position: resolvePosition(indeterminate, input.position),
+    control,
     startedAt: Date.now(),
   }
 }

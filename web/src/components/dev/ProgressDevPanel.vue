@@ -17,6 +17,7 @@ import {
   LABEL_ADVISED_MAX,
 } from '@/utils/progress'
 import type {
+  ControlMode,
   LabelPosition,
   ProgressDirection,
   ProgressMode,
@@ -26,7 +27,13 @@ import type {
 
 const store = useProgressStore()
 
-const kind = ref<'timed' | 'loading'>('timed')
+const kind = ref<'timed' | 'loading' | 'controlled'>('timed')
+const controlMode = ref<ControlMode>('hold')
+const riseRate = ref(0.35)
+const fallRate = ref(0.25)
+const pulseGain = ref(0.08)
+const failAtEmpty = ref(false)
+const directValue = ref(0)
 const shape = ref<ProgressShape>('bar')
 const label = ref('Fouille du véhicule…')
 const icon = ref('')
@@ -44,6 +51,13 @@ const circleSize = ref(CIRCLE_DEFAULT_SIZE)
 const KIND_OPTIONS = [
   { value: 'timed', label: 'Progression' },
   { value: 'loading', label: 'Chargement' },
+  { value: 'controlled', label: 'Piloté' },
+]
+
+const CONTROL_MODE_OPTIONS = [
+  { value: 'direct', label: 'Direct' },
+  { value: 'hold', label: 'Maintien' },
+  { value: 'pulse', label: 'Impulsions' },
 ]
 
 const SHAPE_OPTIONS = [
@@ -97,6 +111,7 @@ const COLOR_PRESETS = ['#a1cbe8', '#ecf6ff', '#34d3a6', '#f0be60', '#f46e7a']
 
 const isCircle = computed(() => shape.value === 'circle')
 const isLoading = computed(() => kind.value === 'loading')
+const isControlled = computed(() => kind.value === 'controlled')
 
 const LOADING_CIRCLE_DIRECTIONS = [
   { value: 'clockwise', label: 'Horaire' },
@@ -162,8 +177,18 @@ const labelHintTone = computed(() =>
 )
 
 const start = (): void => {
+  directValue.value = 0
   store.start({
     indeterminate: isLoading.value,
+    control: isControlled.value
+      ? {
+          mode: controlMode.value,
+          riseRate: riseRate.value,
+          fallRate: fallRate.value,
+          pulseGain: pulseGain.value,
+          failAtEmpty: failAtEmpty.value,
+        }
+      : undefined,
     shape: shape.value,
     label: label.value,
     icon: icon.value || undefined,
@@ -200,6 +225,22 @@ const pause = (): void => {
 
 const resume = (): void => {
   store.resume()
+}
+
+const holdStart = (): void => {
+  store.setHeld(true)
+}
+
+const holdEnd = (): void => {
+  store.setHeld(false)
+}
+
+const sendPulse = (): void => {
+  store.pulse()
+}
+
+const sendDirect = (): void => {
+  store.setValue(directValue.value / 100)
 }
 
 const presetSearch = (): void => {
@@ -354,7 +395,7 @@ const presetMinimal = (): void => {
         </DevField>
 
         <div class="panel__row">
-          <DevField :label="durationLabel">
+          <DevField v-if="!isControlled" :label="durationLabel">
             <input v-model.number="duration" type="number" min="100" step="500" />
           </DevField>
 
@@ -362,6 +403,28 @@ const presetMinimal = (): void => {
             <input v-model="color" type="text" spellcheck="false" />
           </DevField>
         </div>
+
+        <template v-if="isControlled">
+          <DevField label="Pilotage">
+            <DevToggleGroup v-model="controlMode" :options="CONTROL_MODE_OPTIONS" />
+          </DevField>
+
+          <div class="panel__row">
+            <DevField v-if="controlMode !== 'direct'" label="Montée (/s)">
+              <input v-model.number="riseRate" type="number" min="0.05" step="0.05" />
+            </DevField>
+
+            <DevField v-if="controlMode !== 'direct'" label="Descente (/s)">
+              <input v-model.number="fallRate" type="number" min="0" step="0.05" />
+            </DevField>
+
+            <DevField v-if="controlMode === 'pulse'" label="Gain/impulsion">
+              <input v-model.number="pulseGain" type="number" min="0.01" step="0.01" />
+            </DevField>
+          </div>
+
+          <DevCheck v-model="failAtEmpty" label="Échouer à 0 %" />
+        </template>
 
         <DevSwatches v-model="color" :colors="COLOR_PRESETS" />
 
@@ -372,7 +435,12 @@ const presetMinimal = (): void => {
           :disabled="centerUnavailable"
         />
 
-        <DevCheck v-model="showTime" :label="timeLabel" :disabled="centerUnavailable" />
+        <DevCheck
+          v-if="!isControlled"
+          v-model="showTime"
+          :label="timeLabel"
+          :disabled="centerUnavailable"
+        />
 
         <DevCheck v-if="!isCircle" v-model="background" label="Fond de panneau" />
 
@@ -381,6 +449,31 @@ const presetMinimal = (): void => {
           <DevButton @click="stop">Terminer</DevButton>
           <DevButton v-if="!isLoading" @click="fail">Échouer</DevButton>
           <DevButton @click="cancel">Annuler</DevButton>
+        </div>
+
+        <div v-if="isControlled" class="panel__actions">
+          <DevButton
+            v-if="controlMode === 'hold'"
+            variant="primary"
+            @pointerdown="holdStart"
+            @pointerup="holdEnd"
+            @pointerleave="holdEnd"
+          >
+            Maintenir
+          </DevButton>
+          <DevButton v-else-if="controlMode === 'pulse'" variant="primary" @click="sendPulse">
+            Impulsion
+          </DevButton>
+          <input
+            v-else
+            v-model.number="directValue"
+            class="panel__slider"
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            @input="sendDirect"
+          />
         </div>
 
         <div v-if="!isLoading" class="panel__row panel__row--end">
@@ -444,6 +537,12 @@ const presetMinimal = (): void => {
 
 .panel__row--end {
   align-items: flex-end;
+}
+
+.panel__slider {
+  flex: 1 1 auto;
+  accent-color: #6fa8d4;
+  cursor: pointer;
 }
 
 .panel__actions {
