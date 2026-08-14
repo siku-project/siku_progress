@@ -98,6 +98,9 @@ const resolveDirection = (
       ? (direction as CircleDirection)
       : 'clockwise'
   }
+  if (indeterminate) {
+    return direction === 'right-left' ? 'right-left' : 'left-right'
+  }
   return BAR_DIRECTIONS.includes(direction as BarDirection)
     ? (direction as BarDirection)
     : 'left-right'

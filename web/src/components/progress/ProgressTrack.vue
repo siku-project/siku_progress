@@ -62,6 +62,7 @@ const fillStyle = computed(() => ({
     <template v-if="item.indeterminate">
       <span
         class="track__pulse"
+        :class="{ 'track__pulse--reverse': item.direction === 'right-left' }"
         :style="{
           ...fillStyle,
           animationDuration: `${item.duration}ms`,
@@ -145,16 +146,19 @@ const fillStyle = computed(() => ({
   animation-name: pulse-sweep;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
-  animation-direction: alternate;
   will-change: transform;
+}
+
+.track__pulse--reverse {
+  animation-direction: reverse;
 }
 
 @keyframes pulse-sweep {
   from {
-    transform: translateX(0);
+    transform: translateX(-100%);
   }
   to {
-    transform: translateX(194%);
+    transform: translateX(294%);
   }
 }
 

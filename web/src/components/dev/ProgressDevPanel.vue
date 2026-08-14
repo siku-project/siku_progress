@@ -81,6 +81,11 @@ const LOADING_CIRCLE_DIRECTIONS = [
   { value: 'counter-clockwise', label: 'Anti-horaire' },
 ]
 
+const LOADING_BAR_DIRECTIONS = [
+  { value: 'left-right', label: 'Depuis la gauche' },
+  { value: 'right-left', label: 'Depuis la droite' },
+]
+
 const percentUnavailable = computed(
   () => isCircle.value && circleSize.value < CIRCLE_PERCENT_MIN_SIZE,
 )
@@ -91,10 +96,8 @@ const directionOptions = computed(() => {
   if (isCircle.value) {
     return isLoading.value ? LOADING_CIRCLE_DIRECTIONS : CIRCLE_DIRECTION_OPTIONS
   }
-  return BAR_DIRECTION_OPTIONS
+  return isLoading.value ? LOADING_BAR_DIRECTIONS : BAR_DIRECTION_OPTIONS
 })
-
-const showDirection = computed(() => !isLoading.value || isCircle.value)
 
 const durationLabel = computed(() => (isLoading.value ? 'Cycle (ms)' : 'Durée (ms)'))
 
@@ -241,7 +244,7 @@ const presetMinimal = (): void => {
           <DevToggleGroup v-model="shape" :options="SHAPE_OPTIONS" />
         </DevField>
 
-        <DevField v-if="showDirection" label="Direction">
+        <DevField label="Direction">
           <DevToggleGroup v-model="direction" :options="directionOptions" :columns="2" />
         </DevField>
 
