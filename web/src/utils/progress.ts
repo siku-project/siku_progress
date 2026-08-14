@@ -33,6 +33,7 @@ export const CIRCLE_MIN_SIZE = 64
 export const CIRCLE_MAX_SIZE = 156
 export const CIRCLE_DEFAULT_SIZE = 120
 export const CIRCLE_PERCENT_MIN_SIZE = 96
+export const LOADING_DEFAULT_CYCLE = 1400
 
 const HEX_PATTERN = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
 
@@ -47,6 +48,7 @@ export interface ProgressInput {
   showPercentage?: boolean
   background?: boolean
   size?: number
+  indeterminate?: boolean
 }
 
 export interface ProgressItem {
@@ -61,6 +63,7 @@ export interface ProgressItem {
   showPercentage: boolean
   background: boolean
   size: number
+  indeterminate: boolean
   startedAt: number
 }
 
@@ -84,9 +87,13 @@ export const hexToRgba = (hex: string, alpha: number): string => {
 
 const resolveDirection = (
   shape: ProgressShape,
-  direction?: ProgressDirection,
+  direction: ProgressDirection | undefined,
+  indeterminate: boolean,
 ): ProgressDirection => {
   if (shape === 'circle') {
+    if (indeterminate) {
+      return direction === 'counter-clockwise' ? 'counter-clockwise' : 'clockwise'
+    }
     return CIRCLE_DIRECTIONS.includes(direction as CircleDirection)
       ? (direction as CircleDirection)
       : 'clockwise'
@@ -105,10 +112,13 @@ export const normalizeProgress = (input: ProgressInput, id: number): ProgressIte
       ? Math.min(CIRCLE_MAX_SIZE, Math.max(CIRCLE_MIN_SIZE, Math.round(input.size)))
       : CIRCLE_DEFAULT_SIZE
   const label = typeof input.label === 'string' ? input.label.trim() : ''
+  const indeterminate = input.indeterminate === true
   const duration =
     typeof input.duration === 'number' && Number.isFinite(input.duration)
       ? Math.max(MIN_DURATION, Math.floor(input.duration))
-      : DEFAULT_DURATION
+      : indeterminate
+        ? LOADING_DEFAULT_CYCLE
+        : DEFAULT_DURATION
 
   return {
     id,
@@ -118,15 +128,18 @@ export const normalizeProgress = (input: ProgressInput, id: number): ProgressIte
       ? (input.labelPosition as LabelPosition)
       : 'bottom',
     duration,
-    direction: resolveDirection(shape, input.direction),
+    direction: resolveDirection(shape, input.direction, indeterminate),
     mode: PROGRESS_MODES.includes(input.mode as ProgressMode)
       ? (input.mode as ProgressMode)
       : 'fill',
     color: typeof input.color === 'string' && isValidHex(input.color) ? input.color : DEFAULT_COLOR,
     showPercentage:
-      input.showPercentage === true && !(shape === 'circle' && size < CIRCLE_PERCENT_MIN_SIZE),
+      input.showPercentage === true &&
+      !indeterminate &&
+      !(shape === 'circle' && size < CIRCLE_PERCENT_MIN_SIZE),
     background: shape === 'circle' ? false : input.background !== false,
     size,
+    indeterminate,
     startedAt: Date.now(),
   }
 }

@@ -42,6 +42,9 @@ const stoppedRatio = computed<number | null>(() => {
 })
 
 const arcRatio = computed<number>(() => {
+  if (props.item.indeterminate) {
+    return 0.27
+  }
   if (stoppedRatio.value !== null) {
     return sweep.value.from + (sweep.value.to - sweep.value.from) * stoppedRatio.value
   }
@@ -55,6 +58,9 @@ const dashArray = computed(
 )
 
 const dashOffset = computed(() => {
+  if (props.item.indeterminate) {
+    return 0
+  }
   if (sweep.value.anchor === 'center') {
     return arcLength.value / 2
   }
@@ -65,7 +71,7 @@ const dashOffset = computed(() => {
 })
 
 const transition = computed(() => {
-  if (props.phase === 'cancelled' || !running.value) {
+  if (props.item.indeterminate || props.phase === 'cancelled' || !running.value) {
     return 'none'
   }
   return `stroke-dasharray ${props.item.duration}ms linear, stroke-dashoffset ${props.item.duration}ms linear`
@@ -88,7 +94,24 @@ const dashStyle = computed(() => ({
     class="gauge"
     :class="{ 'gauge--done': phase === 'done', 'gauge--cancelled': phase === 'cancelled' }"
   >
-    <svg :width="size" :height="size" :viewBox="`0 0 ${size} ${size}`" aria-hidden="true">
+    <svg
+      :width="size"
+      :height="size"
+      :viewBox="`0 0 ${size} ${size}`"
+      aria-hidden="true"
+      :class="{
+        'gauge__svg--spin': item.indeterminate,
+        'gauge__svg--reverse': item.indeterminate && item.direction === 'counter-clockwise',
+      }"
+      :style="
+        item.indeterminate
+          ? {
+              animationDuration: `${item.duration}ms`,
+              animationPlayState: phase === 'running' ? 'running' : 'paused',
+            }
+          : undefined
+      "
+    >
       <circle
         class="gauge__border"
         :cx="center"
@@ -144,6 +167,23 @@ const dashStyle = computed(() => ({
   outline: none;
   border: none;
   overflow: visible;
+}
+
+.gauge__svg--spin {
+  animation-name: gauge-spin;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+.gauge__svg--reverse {
+  animation-direction: reverse;
+}
+
+@keyframes gauge-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .gauge__border {

@@ -25,6 +25,7 @@ import type {
 
 const store = useProgressStore()
 
+const kind = ref<'timed' | 'loading'>('timed')
 const shape = ref<ProgressShape>('bar')
 const label = ref('Fouille du véhicule…')
 const labelPosition = ref<LabelPosition>('bottom')
@@ -35,6 +36,11 @@ const color = ref(DEFAULT_COLOR)
 const showPercentage = ref(true)
 const background = ref(true)
 const circleSize = ref(CIRCLE_DEFAULT_SIZE)
+
+const KIND_OPTIONS = [
+  { value: 'timed', label: 'Progression' },
+  { value: 'loading', label: 'Chargement' },
+]
 
 const SHAPE_OPTIONS = [
   { value: 'bar', label: 'Barre' },
@@ -68,6 +74,12 @@ const LABEL_POSITION_OPTIONS = [
 const COLOR_PRESETS = ['#a1cbe8', '#ecf6ff', '#34d3a6', '#f0be60', '#f46e7a']
 
 const isCircle = computed(() => shape.value === 'circle')
+const isLoading = computed(() => kind.value === 'loading')
+
+const LOADING_CIRCLE_DIRECTIONS = [
+  { value: 'clockwise', label: 'Horaire' },
+  { value: 'counter-clockwise', label: 'Anti-horaire' },
+]
 
 const percentUnavailable = computed(
   () => isCircle.value && circleSize.value < CIRCLE_PERCENT_MIN_SIZE,
@@ -75,12 +87,19 @@ const percentUnavailable = computed(
 
 const sizeHint = `${CIRCLE_MIN_SIZE}–${CIRCLE_MAX_SIZE} px · % masqué sous ${CIRCLE_PERCENT_MIN_SIZE}`
 
-const directionOptions = computed(() =>
-  isCircle.value ? CIRCLE_DIRECTION_OPTIONS : BAR_DIRECTION_OPTIONS,
-)
+const directionOptions = computed(() => {
+  if (isCircle.value) {
+    return isLoading.value ? LOADING_CIRCLE_DIRECTIONS : CIRCLE_DIRECTION_OPTIONS
+  }
+  return BAR_DIRECTION_OPTIONS
+})
 
-watch(shape, (value) => {
-  direction.value = value === 'circle' ? 'clockwise' : 'left-right'
+const showDirection = computed(() => !isLoading.value || isCircle.value)
+
+const durationLabel = computed(() => (isLoading.value ? 'Cycle (ms)' : 'Durée (ms)'))
+
+watch([shape, kind], ([shapeValue]) => {
+  direction.value = shapeValue === 'circle' ? 'clockwise' : 'left-right'
 })
 
 const labelHint = computed(() => `${label.value.length}/${LABEL_ADVISED_MAX} conseillés`)
@@ -90,6 +109,7 @@ const labelHintTone = computed(() =>
 
 const start = (): void => {
   store.start({
+    indeterminate: isLoading.value,
     shape: shape.value,
     label: label.value,
     labelPosition: labelPosition.value,
@@ -105,6 +125,10 @@ const start = (): void => {
 
 const cancel = (): void => {
   store.cancel()
+}
+
+const stop = (): void => {
+  store.stop()
 }
 
 const presetSearch = (): void => {
@@ -174,6 +198,23 @@ const presetCircleMini = (): void => {
   })
 }
 
+const presetLoadingBar = (): void => {
+  store.start({
+    indeterminate: true,
+    label: 'Connexion au serveur…',
+  })
+}
+
+const presetLoadingCircle = (): void => {
+  store.start({
+    indeterminate: true,
+    shape: 'circle',
+    label: 'Recherche',
+    labelPosition: 'bottom',
+    size: 96,
+  })
+}
+
 const presetMinimal = (): void => {
   store.start({
     direction: 'left-right',
@@ -192,15 +233,19 @@ const presetMinimal = (): void => {
       <div class="panel__body">
         <p class="ice-title panel__title text-[10px]">Progression — Dev</p>
 
+        <DevField label="Type">
+          <DevToggleGroup v-model="kind" :options="KIND_OPTIONS" />
+        </DevField>
+
         <DevField label="Forme">
           <DevToggleGroup v-model="shape" :options="SHAPE_OPTIONS" />
         </DevField>
 
-        <DevField label="Direction">
+        <DevField v-if="showDirection" label="Direction">
           <DevToggleGroup v-model="direction" :options="directionOptions" :columns="2" />
         </DevField>
 
-        <DevField label="Mode">
+        <DevField v-if="!isLoading" label="Mode">
           <DevToggleGroup v-model="mode" :options="MODE_OPTIONS" />
         </DevField>
 
@@ -223,7 +268,7 @@ const presetMinimal = (): void => {
         </DevField>
 
         <div class="panel__row">
-          <DevField label="Durée (ms)">
+          <DevField :label="durationLabel">
             <input v-model.number="duration" type="number" min="100" step="500" />
           </DevField>
 
@@ -235,6 +280,7 @@ const presetMinimal = (): void => {
         <DevSwatches v-model="color" :colors="COLOR_PRESETS" />
 
         <DevCheck
+          v-if="!isLoading"
           v-model="showPercentage"
           label="Afficher le pourcentage"
           :disabled="percentUnavailable"
@@ -244,6 +290,7 @@ const presetMinimal = (): void => {
 
         <div class="panel__actions">
           <DevButton variant="primary" @click="start">Lancer</DevButton>
+          <DevButton @click="stop">Terminer</DevButton>
           <DevButton @click="cancel">Annuler</DevButton>
         </div>
 
@@ -257,6 +304,8 @@ const presetMinimal = (): void => {
           <DevButton variant="ghost" @click="presetCircle">Cercle 6s</DevButton>
           <DevButton variant="ghost" @click="presetCircleDrain">Oxygène 5s</DevButton>
           <DevButton variant="ghost" @click="presetCircleMini">Cercle mini 3s</DevButton>
+          <DevButton variant="ghost" @click="presetLoadingBar">Chargement barre</DevButton>
+          <DevButton variant="ghost" @click="presetLoadingCircle">Chargement cercle</DevButton>
         </div>
       </div>
     </IcePanel>

@@ -46,8 +46,18 @@ export const useProgressStore = defineStore('progress', () => {
     current.value = item
     phase.value = 'running'
     stoppedAt.value = null
-    endTimer = setTimeout(() => finish('done'), item.duration)
+    if (!item.indeterminate) {
+      endTimer = setTimeout(() => finish('done'), item.duration)
+    }
     return item
+  }
+
+  const stop = (): boolean => {
+    if (!current.value || phase.value !== 'running') {
+      return false
+    }
+    finish('done')
+    return true
   }
 
   const cancel = (): boolean => {
@@ -63,5 +73,5 @@ export const useProgressStore = defineStore('progress', () => {
     current.value = null
   }
 
-  return { current, phase, stoppedAt, start, cancel, clear }
+  return { current, phase, stoppedAt, start, stop, cancel, clear }
 })

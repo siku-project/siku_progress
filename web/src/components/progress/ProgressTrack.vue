@@ -59,18 +59,30 @@ const fillStyle = computed(() => ({
     class="track"
     :class="{ 'track--done': phase === 'done', 'track--cancelled': phase === 'cancelled' }"
   >
-    <span
-      v-for="segment in segments"
-      :key="segment.key"
-      class="track__fill"
-      :class="`track__fill--${segment.placement}`"
-      :style="{
-        ...fillStyle,
-        transformOrigin: segment.origin,
-        transform: `scaleX(${scaleFor(segment)})`,
-        transitionDuration: transitionFor(),
-      }"
-    ></span>
+    <template v-if="item.indeterminate">
+      <span
+        class="track__pulse"
+        :style="{
+          ...fillStyle,
+          animationDuration: `${item.duration}ms`,
+          animationPlayState: phase === 'running' ? 'running' : 'paused',
+        }"
+      ></span>
+    </template>
+    <template v-else>
+      <span
+        v-for="segment in segments"
+        :key="segment.key"
+        class="track__fill"
+        :class="`track__fill--${segment.placement}`"
+        :style="{
+          ...fillStyle,
+          transformOrigin: segment.origin,
+          transform: `scaleX(${scaleFor(segment)})`,
+          transitionDuration: transitionFor(),
+        }"
+      ></span>
+    </template>
     <span class="track__sheen" aria-hidden="true"></span>
   </div>
 </template>
@@ -121,6 +133,29 @@ const fillStyle = computed(() => ({
   width: 50%;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
+}
+
+.track__pulse {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 34%;
+  border-radius: 9999px;
+  animation-name: pulse-sweep;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  will-change: transform;
+}
+
+@keyframes pulse-sweep {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(194%);
+  }
 }
 
 .track__sheen {
