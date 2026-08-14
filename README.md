@@ -152,8 +152,6 @@ Every field is optional and validated: an invalid value falls back to the family
 | `Clear()` | Wipes the active progress instantly, settled as `cancelled`. |
 | `IsActive()` | Whether a progress is currently active. |
 
-The local event `siku_progress:client:finished` is also triggered with the result for observers.
-
 ### Server exports
 
 The same surface with the player source as first argument: `Start(source, data, onFinish?)`, `Stop(source)`, `Cancel(source)`, `Fail(source)`, `Pause(source, autoResumeMs?)`, `Resume(source)`, `SetValue(source, value)`, `SetHeld(source, held)`, `Pulse(source)`, `CompleteStep(source)`, `SetSteps(source, count)`, `Clear(source)`, `IsActive(source)`.
@@ -164,7 +162,7 @@ Server-initiated progress is tracked per player with a token: the outcome is cor
 
 ### Events
 
-The `siku_progress:client:*` events are `RegisterNetEvent` handlers — usable from the server (`TriggerClientEvent`) or locally from another client resource (`TriggerEvent`): `start`, `stop`, `cancel`, `fail`, `pause`, `resume`, `setValue`, `setHeld`, `pulse`, `completeStep`, `setSteps`, `clear`. Payloads match the export signatures.
+Every event lives in the resource's reserved namespace (`siku_progress:<context>:<action>`) and is internal plumbing — the transport between the server exports, the client and the NUI. The API surface is the exports above: do not listen to or trigger the internal events, their payloads may change without notice.
 
 ### Icons
 
