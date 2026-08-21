@@ -137,7 +137,7 @@ local function startProgress(data, onFinish, serverToken)
   nextToken = nextToken + 1
   currentToken = nextToken
   pending[currentToken] = {
-    handler = type(onFinish) == 'function' and onFinish or nil,
+    handler = IsCallable(onFinish) and onFinish or nil,
     serverToken = tonumber(serverToken),
   }
 
