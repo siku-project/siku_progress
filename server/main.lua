@@ -57,7 +57,7 @@ local function startProgress(source, data, onFinish)
   nextToken = nextToken + 1
   pending[id] = {
     token = nextToken,
-    handler = type(onFinish) == 'function' and onFinish or nil,
+    handler = IsCallable(onFinish) and onFinish or nil,
   }
 
   TriggerClientEvent('siku_progress:client:start', id, data, nextToken)
