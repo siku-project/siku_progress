@@ -16,8 +16,6 @@ shared_scripts {
   'config/progress.lua',
   'config/steps.lua',
   'config/translation.lua',
-  'shared/utils/locale.lua',
-  'shared/utils/callable.lua',
 }
 
 server_scripts {
