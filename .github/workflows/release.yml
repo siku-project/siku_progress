@@ -27,7 +27,7 @@ jobs:
       - name: Assemble package
         run: |
           mkdir -p package/siku_progress/web
-          cp -r client server shared config translations fxmanifest.lua README.md package/siku_progress/
+          cp -r client server config translations fxmanifest.lua README.md package/siku_progress/
           cp -r web/dist package/siku_progress/web/dist
           cd package
           zip -r ../siku_progress.zip siku_progress
