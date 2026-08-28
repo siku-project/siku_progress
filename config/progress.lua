@@ -77,4 +77,12 @@ ProgressConfig = {
   ---
   --- Default: false
   defaultShowTime = false,
+
+  --- Grace window in milliseconds the server allows when a client reports
+  --- a timed progress as finished. The report must arrive no earlier than
+  --- the duration minus this window; anything earlier is settled as
+  --- cancelled. Covers network latency and interface timer drift.
+  ---
+  --- Default: 250
+  completionTolerance = 250,
 }
