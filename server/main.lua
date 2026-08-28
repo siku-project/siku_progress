@@ -1,8 +1,24 @@
+local RESULT_DONE <const> = 'done'
+local RESULT_CANCELLED <const> = 'cancelled'
+local MIN_DURATION <const> = 100
+local STEPS_MIN <const> = 1
+local STEPS_MAX <const> = 10
+local DEFAULT_TOLERANCE <const> = 250
+
 local VALID_RESULTS <const> = {
   done = true,
   cancelled = true,
   failed = true,
 }
+
+local FAMILIES <const> = {
+  TIMED = 'timed',
+  LOADING = 'loading',
+  CONTROLLED = 'controlled',
+  STEPPED = 'stepped',
+}
+
+local TOLERANCE <const> = math.max(tonumber(ProgressConfig.completionTolerance) or DEFAULT_TOLERANCE, 0)
 
 local nextToken = 0
 local pending = {}
@@ -18,6 +34,70 @@ local function resolveSource(source)
   end
 
   return id
+end
+
+--- Clamps a numeric field into its interface bounds, refusing anything that
+--- is not a finite number.
+---@param value any The raw field.
+---@param minimum number The lower bound.
+---@param maximum number The upper bound.
+---@return number? value The clamped whole number, or nil.
+local function clampCount(value, minimum, maximum)
+  local count <const> = tonumber(value)
+
+  if not count or count ~= count or count == math.huge or count == -math.huge then
+    return nil
+  end
+
+  return math.min(maximum, math.max(minimum, math.floor(count + 0.5)))
+end
+
+--- Reads the family of a payload and the terms a completion is judged
+--- against, the same way the interface reads them. What the server accepts
+--- as 'done' is decided here, never by what a client reports.
+---@param data table The progress payload.
+---@return table terms The family, and the duration or steps it must earn.
+local function readTerms(data)
+  if data.indeterminate == true then
+    return { family = FAMILIES.LOADING }
+  end
+
+  if type(data.control) == 'table' then
+    return { family = FAMILIES.CONTROLLED }
+  end
+
+  local steps <const> = clampCount(data.steps, STEPS_MIN, STEPS_MAX)
+
+  if steps then
+    return { family = FAMILIES.STEPPED, steps = steps }
+  end
+
+  return {
+    family = FAMILIES.TIMED,
+    duration = clampCount(data.duration, MIN_DURATION, math.maxinteger) or ProgressConfig.defaultDuration,
+  }
+end
+
+--- Whether the completion a client reports was actually earned, judged on
+--- what the server knows: the clock for a timed progress, the validated
+--- steps for a stepped one, an explicit stop for a loading. A controlled
+--- progress is the player's to finish by design.
+---@param entry table The pending progress.
+---@return boolean earned Whether 'done' may be believed.
+local function isCompletionEarned(entry)
+  if entry.stopRequested or entry.family == FAMILIES.CONTROLLED then
+    return true
+  end
+
+  if entry.family == FAMILIES.LOADING then
+    return false
+  end
+
+  if entry.family == FAMILIES.STEPPED then
+    return entry.stepsDone >= entry.steps
+  end
+
+  return GetGameTimer() - entry.startedAt + TOLERANCE >= entry.duration
 end
 
 --- Settles the pending progress of a player, invoking its handler.
@@ -52,25 +132,40 @@ local function startProgress(source, data, onFinish)
     return false
   end
 
-  settlePending(id, 'cancelled')
+  settlePending(id, RESULT_CANCELLED)
+
+  local terms <const> = readTerms(data)
 
   nextToken = nextToken + 1
   pending[id] = {
     token = nextToken,
     handler = Siku.isCallable(onFinish) and onFinish or nil,
+    family = terms.family,
+    duration = terms.duration,
+    steps = terms.steps,
+    stepsDone = 0,
+    startedAt = GetGameTimer(),
+    stopRequested = false,
   }
 
   TriggerClientEvent('siku_progress:client:start', id, data, nextToken)
   return true
 end
 
---- Ends the active progress of a player in success.
+--- Ends the active progress of a player in success. The stop is recorded
+--- before it travels, so the completion it causes is a legitimate one.
 ---@param source number The player source.
 ---@return boolean stopped Whether the stop was forwarded.
 local function stopProgress(source)
   local id <const> = resolveSource(source)
   if not id then
     return false
+  end
+
+  local entry <const> = pending[id]
+
+  if entry then
+    entry.stopRequested = true
   end
 
   TriggerClientEvent('siku_progress:client:stop', id)
@@ -171,13 +266,20 @@ local function pulseProgress(source)
   return true
 end
 
---- Validates the next step of the active stepped progress of a player.
+--- Validates the next step of the active stepped progress of a player,
+--- counting it server-side: steps are earned here, never reported.
 ---@param source number The player source.
 ---@return boolean completed Whether the step was forwarded.
 local function completeProgressStep(source)
   local id <const> = resolveSource(source)
   if not id then
     return false
+  end
+
+  local entry <const> = pending[id]
+
+  if entry then
+    entry.stepsDone = entry.stepsDone + 1
   end
 
   TriggerClientEvent('siku_progress:client:completeStep', id)
@@ -192,6 +294,12 @@ local function setProgressSteps(source, count)
   local id <const> = resolveSource(source)
   if not id or type(count) ~= 'number' then
     return false
+  end
+
+  local entry <const> = pending[id]
+
+  if entry then
+    entry.stepsDone = clampCount(count, 0, STEPS_MAX) or entry.stepsDone
   end
 
   TriggerClientEvent('siku_progress:client:setSteps', id, count)
@@ -212,7 +320,7 @@ local function clearProgress(source)
 end
 
 --- Checks whether a server-initiated progress is pending for a player.
----@param source number The player source.
+---@param source any The player source.
 ---@return boolean active Whether a server-initiated progress is pending.
 local function isProgressActive(source)
   local id <const> = tonumber(source)
@@ -228,13 +336,21 @@ RegisterNetEvent('siku_progress:server:finished', function(token, result)
   end
 
   pending[id] = nil
+
+  local outcome = VALID_RESULTS[result] and result or RESULT_CANCELLED
+
+  if outcome == RESULT_DONE and not isCompletionEarned(entry) then
+    Siku.print.warn(('Player %d reported an unearned progress completion, settled as cancelled'):format(id))
+    outcome = RESULT_CANCELLED
+  end
+
   if entry.handler then
-    entry.handler(VALID_RESULTS[result] and result or 'cancelled')
+    entry.handler(outcome)
   end
 end)
 
 AddEventHandler('playerDropped', function()
-  settlePending(source, 'cancelled')
+  settlePending(source, RESULT_CANCELLED)
 end)
 
 exports('Start', startProgress)
