@@ -36,6 +36,20 @@ local function resolveSource(source)
   return id
 end
 
+--- Resolves a player source that has a server-started progress pending, so
+--- a control call is only forwarded when there is something to control.
+---@param source any The player source to validate.
+---@return number? source The numeric source, or nil when invalid or idle.
+local function resolvePendingSource(source)
+  local id <const> = resolveSource(source)
+
+  if not id or not pending[id] then
+    return nil
+  end
+
+  return id
+end
+
 --- Clamps a numeric field into its interface bounds, refusing anything that
 --- is not a finite number.
 ---@param value any The raw field.
@@ -157,7 +171,7 @@ end
 ---@param source number The player source.
 ---@return boolean stopped Whether the stop was forwarded.
 local function stopProgress(source)
-  local id <const> = resolveSource(source)
+  local id <const> = resolvePendingSource(source)
   if not id then
     return false
   end
@@ -176,7 +190,7 @@ end
 ---@param source number The player source.
 ---@return boolean cancelled Whether the cancel was forwarded.
 local function cancelProgress(source)
-  local id <const> = resolveSource(source)
+  local id <const> = resolvePendingSource(source)
   if not id then
     return false
   end
@@ -189,7 +203,7 @@ end
 ---@param source number The player source.
 ---@return boolean failed Whether the fail was forwarded.
 local function failProgress(source)
-  local id <const> = resolveSource(source)
+  local id <const> = resolvePendingSource(source)
   if not id then
     return false
   end
@@ -203,7 +217,7 @@ end
 ---@param autoResumeMs? number Automatic resume delay in milliseconds.
 ---@return boolean paused Whether the pause was forwarded.
 local function pauseProgress(source, autoResumeMs)
-  local id <const> = resolveSource(source)
+  local id <const> = resolvePendingSource(source)
   if not id then
     return false
   end
@@ -216,7 +230,7 @@ end
 ---@param source number The player source.
 ---@return boolean resumed Whether the resume was forwarded.
 local function resumeProgress(source)
-  local id <const> = resolveSource(source)
+  local id <const> = resolvePendingSource(source)
   if not id then
     return false
   end
@@ -230,7 +244,7 @@ end
 ---@param value number The gauge value to apply, between 0 and 1.
 ---@return boolean applied Whether the value was forwarded.
 local function setProgressValue(source, value)
-  local id <const> = resolveSource(source)
+  local id <const> = resolvePendingSource(source)
   if not id or type(value) ~= 'number' then
     return false
   end
@@ -244,7 +258,7 @@ end
 ---@param held boolean Whether the gauge is currently held.
 ---@return boolean applied Whether the state was forwarded.
 local function setProgressHeld(source, held)
-  local id <const> = resolveSource(source)
+  local id <const> = resolvePendingSource(source)
   if not id then
     return false
   end
@@ -257,7 +271,7 @@ end
 ---@param source number The player source.
 ---@return boolean pulsed Whether the pulse was forwarded.
 local function pulseProgress(source)
-  local id <const> = resolveSource(source)
+  local id <const> = resolvePendingSource(source)
   if not id then
     return false
   end
@@ -271,7 +285,7 @@ end
 ---@param source number The player source.
 ---@return boolean completed Whether the step was forwarded.
 local function completeProgressStep(source)
-  local id <const> = resolveSource(source)
+  local id <const> = resolvePendingSource(source)
   if not id then
     return false
   end
@@ -291,18 +305,16 @@ end
 ---@param count number The number of validated steps to apply.
 ---@return boolean applied Whether the count was forwarded.
 local function setProgressSteps(source, count)
-  local id <const> = resolveSource(source)
-  if not id or type(count) ~= 'number' then
+  local id <const> = resolvePendingSource(source)
+  local steps <const> = clampCount(count, 0, STEPS_MAX)
+
+  if not id or not steps then
     return false
   end
 
-  local entry <const> = pending[id]
+  pending[id].stepsDone = steps
 
-  if entry then
-    entry.stepsDone = clampCount(count, 0, STEPS_MAX) or entry.stepsDone
-  end
-
-  TriggerClientEvent('siku_progress:client:setSteps', id, count)
+  TriggerClientEvent('siku_progress:client:setSteps', id, steps)
   return true
 end
 
@@ -310,7 +322,7 @@ end
 ---@param source number The player source.
 ---@return boolean cleared Whether the clear was forwarded.
 local function clearProgress(source)
-  local id <const> = resolveSource(source)
+  local id <const> = resolvePendingSource(source)
   if not id then
     return false
   end
